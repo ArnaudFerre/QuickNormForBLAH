@@ -8,11 +8,11 @@ In recent years, Language Models (LMs) have emerged as a transformative force in
 We propose to perfect and finalize QuickNorm, a lightweight LM-based method designed to streamline the training and prediction process for BEL, which is not based on LLM, but rather on SLM (for Small Language Model). QuickNorm leverages the accuracy of LM while mitigating their computational demands. We propose to integrate QuickNorm into PubAnnotation, a popular platform for collaborative biomedical text annotation and curation. By combining the agility of QuickNorm with the collaborative capabilities of the PubAnnotation platform, we aim to provide a practical and accessible tool for BEL, advancing the field of biomedical informatics and facilitating breakthroughs in biomedicine. We also propose to integrate new BEL gold standards into PubAnnotation to enable better evaluation of BEL methods: the NCBI Disease Corpus (Doğan et al., 2014) and the BioCreative V BC5CDR corpus (Li et al., 2016). This will allow us to (quickly) experiment and evaluate the robustness of QuickNorm on these well-known datasets, as well as on the already integrated Bacteria Biotope 2019 dataset (Bossy et al., 2019). And if time permits, we will conduct new experiments, e.g. by using LLMs instead of an SLM, and initiate a comparative study, particularly regarding computation times and RAM consumption, with a few other state-of-the-art methods (e.g. BioSyn, Sung et al., 2020).
 
 ## BLAH8 tasks
-Packaging and integration of QuickNorm into PubAnnotation. This means cleaning up the code and creating parsers so that the method can support the PubAnnotation format;
-Integration of EL datasets into PubAnnotation: parsing and formatting the NCBI-Disease and BC5CDR corpora (others may be considered if time permits);
-Evaluation of the method on the PubAnnotation datasets;
-Experiments with different and larger LMs;
-Comparison with SOTA approaches (BioSyn).
+- Packaging and integration of QuickNorm into PubAnnotation. This means cleaning up the code and creating parsers so that the method can support the PubAnnotation format;
+- Integration of EL datasets into PubAnnotation: parsing and formatting the NCBI-Disease and BC5CDR corpora (others may be considered if time permits);
+- Evaluation of the method on the PubAnnotation datasets;
+- Experiments with different and larger LMs;
+- Comparison with SOTA approaches (BioSyn).
 
 ## Team
 Arnaud Ferré, Université Paris-Saclay, MaIAGE, INRAE (France) 
