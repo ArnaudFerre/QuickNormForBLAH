@@ -16,7 +16,7 @@ Comparison with SOTA approaches (BioSyn).
 
 ## Team
 Arnaud Ferré, Université Paris-Saclay, MaIAGE, INRAE (France)
-Louise Deléger, Université Paris-Saclay, MaIAGE, INRAE (France)
+<\br>Louise Deléger, Université Paris-Saclay, MaIAGE, INRAE (France)
 
 ## References
 Bossy R, Deléger L, Chaix E, Ba M, Nédellec C. Bacteria biotope at BioNLP open shared tasks 2019. In Proceedings of the 5th workshop on BioNLP open shared tasks 2019 Nov (pp. 121-131).
