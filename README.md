@@ -20,8 +20,8 @@ Arnaud Ferré, Université Paris-Saclay, MaIAGE, INRAE (France)
 Louise Deléger, Université Paris-Saclay, MaIAGE, INRAE (France)
 
 ## References
-Bossy R, Deléger L, Chaix E, Ba M, Nédellec C. Bacteria biotope at BioNLP open shared tasks 2019. In Proceedings of the 5th workshop on BioNLP open shared tasks 2019 Nov (pp. 121-131).
-Doğan RI, Leaman R, Lu Z. NCBI disease corpus: a resource for disease name recognition and concept normalization. Journal of biomedical informatics. 2014 Feb 1;47:1-0.
-Li J, Sun Y, Johnson RJ, Sciaky D, Wei CH, Leaman R, Davis AP, Mattingly CJ, Wiegers TC, Lu Z. BioCreative V CDR task corpus: a resource for chemical disease relation extraction. Database. 2016 Jan 1;2016.
-Sung M, Jeon H, Lee J, Kang J. Biomedical entity representations with synonym marginalization.  In Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, 2020 (pp 3641–3650). Association for Computational Linguistics.
+Bossy R, Deléger L, Chaix E, Ba M, Nédellec C. Bacteria biotope at BioNLP open shared tasks 2019. In Proceedings of the 5th workshop on BioNLP open shared tasks 2019 Nov (pp. 121-131).  
+Doğan RI, Leaman R, Lu Z. NCBI disease corpus: a resource for disease name recognition and concept normalization. Journal of biomedical informatics. 2014 Feb 1;47:1-0.  
+Li J, Sun Y, Johnson RJ, Sciaky D, Wei CH, Leaman R, Davis AP, Mattingly CJ, Wiegers TC, Lu Z. BioCreative V CDR task corpus: a resource for chemical disease relation extraction. Database. 2016 Jan 1;2016.  
+Sung M, Jeon H, Lee J, Kang J. Biomedical entity representations with synonym marginalization.  In Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, 2020 (pp 3641–3650). Association for Computational Linguistics.  
 
