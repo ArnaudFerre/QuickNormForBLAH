@@ -12,14 +12,14 @@ QuickNorm is designed to be fast and easy-to-use, while retaining good performan
 
 <figure>
     <img src="figures/figure1a.jpg" alt="figure 1a: Training steps of the QuickNorm method">
-    <figcaption><p align="center">Figure 1a: Training steps of the QuickNorm method. Initially, all concept label vectors are calculated using the initial SLM and remain fixed during the first phase of training. In contrast, during this initial phase, mention vectors are modified at each epoch through fine-tuning of the SLM. A second training phase is then conducted, where label vectors are recalculated using the final finetuned SLM from the first phase. Finally, the regression parameters are reset, and a new training phase is initiated</p></figcaption>
+    <figcaption><p align="center">**Figure 1a**: Training steps of the QuickNorm method. Initially, all concept label vectors are calculated using the initial SLM and remain fixed during the first phase of training. In contrast, during this initial phase, mention vectors are modified at each epoch through fine-tuning of the SLM. A second training phase is then conducted, where label vectors are recalculated using the final finetuned SLM from the first phase. Finally, the regression parameters are reset, and a new training phase is initiated</p></figcaption>
 </figure>
 
 <br><br>
 
 <figure>
     <img src="figures/figure1b.jpg" alt="figure 1b: Prediction steps of the QuickNorm method">
-    <figcaption><center>Figure 1b: Prediction steps of the QuickNorm method. The final SLM from the entire training process is utilized to compute the mention vectors and all the concept vectors. Using this fine-tuned SLM in conjunction with the trained linear regression, each mention vector is embedded in the label vector space. A distance calculation is subsequently employed to determine the nearest label vector for each mention vector. The concept associated with this label is then predicted for the current mention. Depending on the number of concepts, the distance calculation can become computationally intensive, so we employ an optimized function with C calls.</center></figcaption>
+    <figcaption><p align="center">**Figure 1b**: Prediction steps of the QuickNorm method. The final SLM from the entire training process is utilized to compute the mention vectors and all the concept vectors. Using this fine-tuned SLM in conjunction with the trained linear regression, each mention vector is embedded in the label vector space. A distance calculation is subsequently employed to determine the nearest label vector for each mention vector. The concept associated with this label is then predicted for the current mention. Depending on the number of concepts, the distance calculation can become computationally intensive, so we employ an optimized function with C calls.</p></figcaption>
 </figure>
 
 ## BLAH8 tasks
