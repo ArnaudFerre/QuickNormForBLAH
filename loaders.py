@@ -140,10 +140,8 @@ def loader_ontobiotope(filePath):
 
 
 ###################################################
-# PubAnnotation loaders:
+# PubAnnotation writers:
 ###################################################
-
-
 def getListOfDocFromBatch(corpusName="", batchName=""):
     l_docUrl = list()
 
@@ -181,6 +179,10 @@ def writeJSON_doc(path="", corpusName="", batchName="", docId=None):
 def writeBatchOfJSON_doc(path="", corpusName="", batchName="", l_docId=None):
     for docId in l_docId:
         writeJSON_doc(path=path, corpusName=corpusName, batchName=batchName, docId=docId)
+
+###################################################
+# PubAnnotation loaders:
+###################################################
 
 
 
