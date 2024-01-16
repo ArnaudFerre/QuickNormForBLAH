@@ -136,3 +136,73 @@ def loader_ontobiotope(filePath):
             dd_obt[concept_id]["parents"].append(parent.id)
 
     return dd_obt
+
+
+
+###################################################
+# PubAnnotation loaders:
+###################################################
+
+
+def getListOfDocFromBatch(corpusName="", batchName=""):
+    l_docUrl = list()
+
+    end = False
+    i = 0
+    while end is not True:
+        i += 1
+
+        if i == 1:
+            r = requests.get('https://pubannotation.org/projects/' + batchName + '/docs/sourcedb/' + corpusName + '.json')
+        else:
+            r = requests.get('https://pubannotation.org/projects/' + batchName + '/docs/sourcedb/' + corpusName + '.json?page=' + str(i))
+
+        if len(r.json()) > 0:
+            for j in range(len(r.json())):
+                l_docUrl.append(r.json()[j]["sourceid"])
+        else:
+            end = True
+
+    return l_docUrl
+
+######
+
+def getJSON_annotationFromfile(corpusName="", batchName="", docId=None):
+    url = "https://pubannotation.org/projects/"+batchName+"/docs/sourcedb/"+corpusName+"/sourceid/" + docId + "/annotations.json"
+    return requests.get(url).json()
+
+def writeJSON_doc(path="", corpusName="", batchName="", docId=None):
+    jsonContent = getJSON_annotationFromfile(corpusName=corpusName, batchName=batchName, docId=docId)
+    with open(path+docId+"_annotations.json", 'w') as f:
+        json.dump(jsonContent, f)
+
+######
+
+def writeBatchOfJSON_doc(path="", corpusName="", batchName="", l_docId=None):
+    for docId in l_docId:
+        writeJSON_doc(path=path, corpusName=corpusName, batchName=batchName, docId=docId)
+
+
+
+
+######################################################################################################################
+# Main
+######################################################################################################################
+if __name__ == '__main__':
+
+    # Load url of doc:
+    BB4_name = "BB-norm@ldeleger"
+    l_trainDoc = getListOfDocFromBatch(corpusName=BB4_name, batchName="bionlp-ost-19-BB-norm-train")
+    l_devDoc = getListOfDocFromBatch(corpusName=BB4_name, batchName="bionlp-ost-19-BB-norm-dev")
+    l_testDoc = getListOfDocFromBatch(corpusName=BB4_name, batchName="bionlp-ost-19-BB-norm-test")
+    print("Number of doc in train, dev, test:", len(l_trainDoc), len(l_devDoc), len(l_testDoc))
+
+    # Write the batches (one file per doc):
+    trainBatchName = "bionlp-ost-19-BB-norm-train"
+    writeBatchOfJSON_doc(path="./datasets/BB4/"+trainBatchName+"/", corpusName=BB4_name, batchName=trainBatchName, l_docId=l_trainDoc)
+
+    devBatchName = "bionlp-ost-19-BB-norm-dev"
+    writeBatchOfJSON_doc(path="./datasets/BB4/" + devBatchName + "/", corpusName=BB4_name, batchName=devBatchName, l_docId=l_devDoc)
+
+    testBatchName = "bionlp-ost-19-BB-norm-test"
+    writeBatchOfJSON_doc(path="./datasets/BB4/" + testBatchName + "/", corpusName=BB4_name, batchName=testBatchName, l_docId=l_testDoc)
