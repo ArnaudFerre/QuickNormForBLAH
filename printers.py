@@ -1,6 +1,8 @@
 
 # Author: Louise Deléger & Arnaud Ferré
-# Description: TRUE project
+# Description: QuickNorm
+
+import json
 
 def print_hf_doc(hf_doc):
     for key in hf_doc.keys():
@@ -31,3 +33,47 @@ def print_hf_bigbio_mentions(hf_bigbio_doc, nbExamples=None):
                 print(mention, "\nGold:", mention["normalized"], "\n")
             else:
                 print(mention)
+
+                
+def print_pubannotation(spacy_norm_corpus, output_folder, project_uri, project_name, sourcedb, onto_name):
+    
+    for doc in spacy_norm_corpus:
+        puba_doc = dict()
+        puba_doc['target'] = project_uri + "/sourceid/" + doc.user_data["document_id"]
+        puba_doc['sourcedb'] = sourcedb
+        puba_doc['sourceid'] = doc.user_data["document_id"]
+        puba_doc['text'] = doc.text
+        puba_doc['project'] = project_name
+        puba_doc['denotations'] = []
+        puba_doc['attributes'] = []
+        count_norm = 1
+        for mention in doc.spans["mentions"]:
+            mention_dict = dict()
+            mention_dict['id'] = mention.id_
+            mention_dict['obj'] = mention.label_
+            mention_dict['span'] = dict()
+            mention_dict['span']['begin'] = mention.start_char
+            mention_dict['span']['end'] = mention.end_char
+            puba_doc['denotations'].append(mention_dict)
+            if (len(mention._.pred_kb_id_) > 0):
+                for predCui in list(mention._.pred_kb_id_):
+                    pred_dict = dict()
+                    pred_dict['pred'] = onto_name
+                    pred_dict['id'] = "A" + str(count_norm)
+                    pred_dict['subj'] = mention.id_
+                    pred_dict['obj'] = predCui
+                    puba_doc['attributes'].append(pred_dict)
+                    count_norm += 1
+            elif (len(mention._.kb_id_) > 0):
+                for predCui in list(mention._.kb_id_):
+                    pred_dict = dict()
+                    pred_dict['pred'] = onto_name
+                    pred_dict['id'] = "A" + str(count_norm)
+                    pred_dict['subj'] = mention.id_
+                    pred_dict['obj'] = predCui
+                    puba_doc['attributes'].append(pred_dict)
+                    count_norm += 1
+
+        with open(output_folder+"/"+doc.user_data["document_id"]+'.json', 'w') as fp:
+            json.dump(puba_doc, fp)
+        
