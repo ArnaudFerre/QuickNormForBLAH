@@ -628,7 +628,7 @@ if __name__ == '__main__':
     l_spacy_BB4 = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
 
     print("Create an ontology in SpaCy (a list of concepts, each one as a SpaCy doc):")
-    dd_obt = loader_ontobiotope("../ressources/OntoBiotope_BioNLP-OST-2019.obo")
+    dd_obt = loader_ontobiotope("./datasets/BB4/OntoBiotope_BioNLP-OST-2019.obo")
     dd_obt_hab = select_subpart_hierarchy(dd_obt, "OBT:000001")
     d_spacyOBT = create_onto_from_ontobiotope_dict_v2(dd_obt_hab, nlp)
 
