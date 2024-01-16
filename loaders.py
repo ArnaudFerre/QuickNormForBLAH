@@ -264,15 +264,16 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
         spacy_doc.spans["mentions"] = l_mentions
         
         # attributes (normalization)
-        for att in doc["attributes"]:
-            mention_id = att['subj']
-            match = re.search("^(.+?)-(\d)$", mention_id)
-            if (match is not None):
-                mention_id = match.group(1)
+        if ("attributes" in doc):
+            for att in doc["attributes"]:
+                mention_id = att['subj']
+                match = re.search("^(.+?)-(\d)$", mention_id)
+                if (match is not None):
+                    mention_id = match.group(1)
          
-            for mention in spacy_doc.spans["mentions"]:
-                if (mention.id_ == mention_id):
-                    mention._.kb_id_.add(att['obj'])
+                for mention in spacy_doc.spans["mentions"]:
+                    if (mention.id_ == mention_id):
+                        mention._.kb_id_.add(att['obj'])
                 
         spacy_corpus.append(spacy_doc)
         
