@@ -31,8 +31,8 @@ from scipy.spatial.distance import cosine, euclidean, cdist
 
 import matplotlib.pyplot as plt
 
-from loaders import loader_ontobiotope
-from printers import print_bb4_hf_mentions
+from loaders import loader_ontobiotope, pubannotation_to_spacy_corpus
+from printers import print_bb4_hf_mentions, print_pubannotation
 from converters import hf_bb4_into_spacy_corpus, create_onto_from_ontobiotope_dict_v2, spacy_onto_to_dict
 from utils import select_subpart_hierarchy, get_list_of_tag_vectors, get_vectors_as_dict, get_vectors
 from evaluation import accuracy
@@ -617,21 +617,27 @@ def twoStep_finetuned_quicknorm_predict(l_valDoc, d_spacyOnto, preprocessor, ber
 # Main
 ######################################################################################################################
 if __name__ == '__main__':
-
-    bb4_norm = load_dataset(path="bigbio/bionlp_st_2019_bb", name="bionlp_st_2019_bb_norm_source")
+    
+    bb4_norm_train_folder = "datasets/BB4/bionlp-ost-19-BB-norm-train/"
+    bb4_norm_dev_folder = "datasets/BB4/bionlp-ost-19-BB-norm-dev/"
+    bb4_norm_test_folder = "datasets/BB4/bionlp-ost-19-BB-norm-test/"
+    
+    output_folder_dev = "output/dev"
+    output_folder_test = "output/test"
+    
+    #bb4_norm = load_dataset(path="bigbio/bionlp_st_2019_bb", name="bionlp_st_2019_bb_norm_source")
     # print_hf_doc(bb4_norm['train'][0])  # A doc in BB4-norm train
-    print("An example in the doc bb4_norm['train'][0]:")
-    print_bb4_hf_mentions(bb4_norm['train'][0], nbExamples=1)
+    #print("An example in the doc bb4_norm['train'][0]:")
+    #print_bb4_hf_mentions(bb4_norm['train'][0], nbExamples=1)
 
-    print("Extract normalization information and transfer into SpaCy format...")
+    #print("Extract normalization information and transfer into SpaCy format...")
     nlp = spacy.load("en_core_web_sm")
-    l_spacy_BB4 = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
+    #l_spacy_BB4 = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
 
     print("Create an ontology in SpaCy (a list of concepts, each one as a SpaCy doc):")
     dd_obt = loader_ontobiotope("./datasets/BB4/OntoBiotope_BioNLP-OST-2019.obo")
     dd_obt_hab = select_subpart_hierarchy(dd_obt, "OBT:000001")
     d_spacyOBT = create_onto_from_ontobiotope_dict_v2(dd_obt_hab, nlp)
-
 
     print("\nQuickNorm:")
 
@@ -644,13 +650,21 @@ if __name__ == '__main__':
     batchFilePath = "./tmp/"
     batchSize = 64
     
-    nlp = spacy.load("en_core_web_sm")
-    l_spacy_BB4_hab_train = hf_bb4_into_spacy_corpus([bb4_norm['train']], l_type=["Habitat"], spacyNlp=nlp)
-    l_spacy_BB4_hab_val = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
+    #nlp = spacy.load("en_core_web_sm")
+   # l_spacy_BB4_hab_train = hf_bb4_into_spacy_corpus([bb4_norm['train']], l_type=["Habitat"], spacyNlp=nlp)
+   # l_spacy_BB4_hab_val = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
+    l_spacy_BB4_hab_train = pubannotation_to_spacy_corpus(bb4_norm_train_folder, l_type=["Habitat"], spacyNlp=nlp)
+    l_spacy_BB4_hab_val = pubannotation_to_spacy_corpus(bb4_norm_dev_folder, l_type=["Habitat"], spacyNlp=nlp)
+    l_spacy_BB4_hab_test = pubannotation_to_spacy_corpus(bb4_norm_test_folder, l_type=["Habitat"], spacyNlp=nlp)
 
    # l_spacyNormalizedBB4_by_quicknorm = twoStep_finetuned_quicknorm(l_spacy_BB4_hab_train, l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, spacyNlp=nlp, verbose=1, mode="pooled_output")
     preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_train, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
-    l_spacyNormalizedBB4_by_quicknorm = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
+    l_spacyNormalizedBB4_by_quicknorm_val = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
+    l_spacyNormalizedBB4_by_quicknorm_test = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_test, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
+    
+    print_pubannotation(l_spacyNormalizedBB4_by_quicknorm_val, output_folder_dev, "http://pubannotation.org/docs/sourcedb/BB-norm@ldeleger", "bionlp-ost-19-BB-norm-dev", "BB-norm@ldeleger", "OntoBiotope")
+    
+    print_pubannotation(l_spacyNormalizedBB4_by_quicknorm_val, output_folder_test, "http://pubannotation.org/docs/sourcedb/BB-norm@ldeleger", "bionlp-ost-19-BB-norm-test", "BB-norm@ldeleger", "OntoBiotope")
     
     end = time.time()
 
@@ -664,7 +678,8 @@ if __name__ == '__main__':
 
     print(end - start, "sec de temps d'execution.")
 
-    print("Accuracy:", accuracy(l_spacyNormalizedBB4_by_quicknorm))
+    print("Accuracy:", accuracy(l_spacyNormalizedBB4_by_quicknorm_val))
+    
 
 
 

@@ -29,6 +29,9 @@ import copy
 
 import matplotlib.pyplot as plt
 
+import glob
+import json
+import re
 
 ###################################################
 # Ontological loaders:
@@ -184,7 +187,98 @@ def writeBatchOfJSON_doc(path="", corpusName="", batchName="", l_docId=None):
 # PubAnnotation loaders:
 ###################################################
 
+def load_pubannotation_corpus(folder):
+    
+    corpus = list()
+    
+    files = glob.glob(folder+"/*.json")
+    for file in files:
+        f = open(file)
+        doc = json.load(f)
+        f.close()
+        corpus.append(doc)
+        
+    return corpus
 
+
+def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
+    
+    puba_corpus = load_pubannotation_corpus(folder)
+    spacy_corpus = list()
+    
+    spacy.tokens.Span.set_extension("kb_id_", default={}, force=True)
+    spacy.tokens.Span.set_extension("pred_kb_id_", default={}, force=True)
+    
+    for doc in puba_corpus:
+        
+        spacy_doc = spacyNlp(doc['text'])
+        spacy_doc.user_data["document_id"] = doc["sourceid"]
+        
+        l_mentions = list()
+        disc_mentions = dict()
+        for i, mention in enumerate(doc["denotations"]):
+            
+            match = re.search("^(.+?)-(\d)$", mention["id"])
+            if (match is not None):
+                mention_id = match.group(1)
+                index = match.group(2)
+                mention_type = mention["obj"]
+                if (not mention_id in disc_mentions):
+                    disc_mentions[mention_id] = dict()
+                    disc_mentions[mention_id]['end'] = mention["span"]["end"]
+                elif (disc_mentions[mention_id]['end'] < mention["span"]["end"]):
+                    disc_mentions[mention_id]['end'] = mention["span"]["end"]
+                if (mention_type != "_FRAGMENT"):
+                    disc_mentions[mention_id]['type'] = mention_type
+                if (index == "0"):
+                    disc_mentions[mention_id]['start'] = mention["span"]["begin"]
+            
+            else:
+                if (mention["obj"] in l_type or l_type is None):
+                    start = mention["span"]["begin"]
+                    end = mention["span"]["end"]
+
+                    mentionSpan = spacy_doc.char_span(start, end, label=mention['obj'], alignment_mode="expand", span_id=mention['id'])
+
+                    # Complete span info:
+                    mentionSpan.id_ = mention["id"]
+                    mentionSpan.label_ = mention["obj"]
+                    mentionSpan._.kb_id_ = set()
+                    mentionSpan._.pred_kb_id_ = set()  # initialization of this attribute for future prediction
+                    l_mentions.append(mentionSpan)
+        
+        for disc in disc_mentions:
+            if (disc_mentions[disc]["type"] in l_type or l_type is None):
+                start = disc_mentions[disc]["start"]
+                end = disc_mentions[disc]["end"]
+
+                mentionSpan = spacy_doc.char_span(start, end, label=disc_mentions[disc]['type'], alignment_mode="expand", span_id=disc)
+
+                # Complete span info:
+                mentionSpan.id_ = disc
+                mentionSpan.label_ = disc_mentions[disc]['type']
+                mentionSpan._.kb_id_ = set()
+                mentionSpan._.pred_kb_id_ = set()  # initialization of this attribute for future prediction
+                l_mentions.append(mentionSpan)
+                          
+        spacy_doc.spans["mentions"] = l_mentions
+        
+        # attributes (normalization)
+        if ("attributes" in doc):
+            for att in doc["attributes"]:
+                mention_id = att['subj']
+                match = re.search("^(.+?)-(\d)$", mention_id)
+                if (match is not None):
+                    mention_id = match.group(1)
+         
+                for mention in spacy_doc.spans["mentions"]:
+                    if (mention.id_ == mention_id):
+                        mention._.kb_id_.add(att['obj'])
+                
+        spacy_corpus.append(spacy_doc)
+        
+    return spacy_corpus
+    
 
 
 ######################################################################################################################
