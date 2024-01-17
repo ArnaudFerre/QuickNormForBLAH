@@ -207,6 +207,7 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
     spacy_corpus = list()
     
     spacy.tokens.Span.set_extension("kb_id_", default={}, force=True)
+    spacy.tokens.Span.set_extension("kb_name_", default={}, force=True)
     spacy.tokens.Span.set_extension("pred_kb_id_", default={}, force=True)
     
     for doc in puba_corpus:
@@ -274,6 +275,7 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
                 for mention in spacy_doc.spans["mentions"]:
                     if (mention.id_ == mention_id):
                         mention._.kb_id_.add(att['obj'])
+                        mention._.kb_name_ = att['pred']
                 
         spacy_corpus.append(spacy_doc)
         
