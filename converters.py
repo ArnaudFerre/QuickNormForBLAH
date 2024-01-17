@@ -131,3 +131,7 @@ def spacy_onto_to_dict(d_spacyOnto,spanKey="synonyms", lower=True):
             d_onto[cui].append(synonymText)
             
     return d_onto
+
+
+def ncbi_onto_pubannotation():
+    pass
