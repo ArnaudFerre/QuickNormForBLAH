@@ -3,6 +3,8 @@
 # Description: QuickNorm
 
 import json
+import sys
+
 
 def print_hf_doc(hf_doc):
     for key in hf_doc.keys():
@@ -76,4 +78,120 @@ def print_pubannotation(spacy_norm_corpus, output_folder, project_uri, project_n
 
         with open(output_folder+"/"+doc.user_data["document_id"]+'.json', 'w') as fp:
             json.dump(puba_doc, fp)
+
+
+######
+# BB4 printers from PubAnnotation
+######
+def getA1File(JsonDocName):
+
+    with open(JsonDocName, "r") as f:
+        d_doc = json.load(f)
+
+        # Only for discontinuous mentions:
+        dd_discontinuous_mention_begin = dict()
+        dd_discontinuous_mention_end = dict()
+        dl_begin_and_end = dict()
+        for item in d_doc["denotations"]:
+            Tid = item["id"]
+            if Tid.find('-') > 0:  # If it is a discontinuous mention
+                T_number = int(Tid[1:Tid.find('-')])
+                if T_number not in dd_discontinuous_mention_begin.keys():
+                    dd_discontinuous_mention_begin[T_number] = dict()
+                if T_number not in dd_discontinuous_mention_end.keys():
+                    dd_discontinuous_mention_end[T_number] = dict()
+                T_fragment_number = int(Tid[Tid.find('-') + 1:])
+                dd_discontinuous_mention_begin[T_number][T_fragment_number] = item["span"]["begin"]
+                dd_discontinuous_mention_end[T_number][T_fragment_number] = item["span"]["end"]
+                dl_begin_and_end[T_number] = list()
+        for T_nb in dd_discontinuous_mention_begin.keys():
+            nb_fragments = len(dd_discontinuous_mention_begin.keys())
+            for i in range(nb_fragments+1):
+                dl_begin_and_end[T_number].append([str(dd_discontinuous_mention_begin[T_nb][i]), str(dd_discontinuous_mention_end[T_nb][i])])
+
+        d_a1_lines = dict()
+        for item in d_doc["denotations"]:
+            Tid = item["id"]
+
+            if Tid.find('-') > 0:  # If it is a discontinuous mention
+                if item["obj"] == "_FRAGMENT":
+                    pass
+                else:
+                    T_number = int(Tid[1:Tid.find('-')])
+                    l_offset = list()
+                    l_fragments = list()
+                    for elt in dl_begin_and_end[T_number]:
+                        l_offset.append(" ".join(elt))
+                        l_fragments.append(d_doc["text"][int(elt[0]):int(elt[1])])
+                    offset = ";".join(l_offset)
+                    mention = " ".join(l_fragments)
+                    d_a1_lines[T_number] = "T"+str(T_number)+"\t"+item["obj"]+" "+offset+"\t"+mention+"\n"
+
+            else:  # If it is a continuous mention (no '-', so = -1)
+                T_number = int(Tid[1:])
+                begin = item["span"]["begin"]
+                end = item["span"]["end"]
+                d_a1_lines[T_number] = "T" + str(T_number) + "\t" + item["obj"] + " " +str(begin)+" "+str(end)+"\t" + d_doc["text"][begin:end]+"\n"
+
+        a1Content = ""
+        for i in range(1, len(d_a1_lines.keys())+1):
+            a1Content += d_a1_lines[i]
+
+    return a1Content
+
+
+def writeA1file(a1Filename, content):
+    with open(a1Filename, "w") as f:
+        f.write(content)
+
+
+def writeA1batch():
+    pass
+
+
+
+def getA2File(JsonDocName):
+    with open(JsonDocName, "r") as f:
+        d_doc = json.load(f)
+
+        d_a2_lines = dict()
+        for annotation in d_doc["attributes"]:
+            N_number = int(annotation["id"][1:])
+            if annotation["subj"].find('-') > 0:
+                T_number = annotation["subj"][0:annotation["subj"].find("-")]
+            else:
+                T_number = annotation["subj"]
+            d_a2_lines[N_number] = "N"+str(N_number)+"\t"+annotation["pred"]+" Annotation:"+T_number+" Referent:"+annotation["obj"]+"\n"
+
+        a2Content = ""
+        for i in range(1, len(d_a2_lines.keys())+1):
+            a2Content += d_a2_lines[i]
+
+    return a2Content
+
+def writeA2file(a2Filename, content):
+    with open(a2Filename, "w") as f:
+        f.write(content)
+
+
+def spacy_into_a2():
+    #Todo
+    pass
+
+
+######################################################################################################################
+# Main
+######################################################################################################################
+if __name__ == '__main__':
+
+
+
+    sys.exit(0)
+
+    content = getA2File("datasets/BB4/bionlp-ost-19-BB-norm-train/BB-norm-448557_annotations.json")
+    writeA2file("datasets/BB4/predictions/BB-norm-448557_annotations.a2", content)
+
+    content = getA1File("datasets/BB4/bionlp-ost-19-BB-norm-train/BB-norm-448557_annotations.json")
+    writeA1file("datasets/BB4/predictions/BB-norm-448557_annotations.a1", content)
+
         

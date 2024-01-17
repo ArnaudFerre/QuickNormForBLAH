@@ -191,7 +191,7 @@ def writeBatchOfJSON_doc(path="", corpusName="", batchName="", l_docId=None):
 # Main
 ######################################################################################################################
 if __name__ == '__main__':
-
+    """
     # Load url of doc:
     BB4_name = "BB-norm@ldeleger"
     l_trainDoc = getListOfDocFromBatch(corpusName=BB4_name, batchName="bionlp-ost-19-BB-norm-train")
@@ -208,3 +208,4 @@ if __name__ == '__main__':
 
     testBatchName = "bionlp-ost-19-BB-norm-test"
     writeBatchOfJSON_doc(path="./datasets/BB4/" + testBatchName + "/", corpusName=BB4_name, batchName=testBatchName, l_docId=l_testDoc)
+    """
