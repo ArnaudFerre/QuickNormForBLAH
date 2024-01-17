@@ -207,7 +207,7 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
     spacy_corpus = list()
     
     spacy.tokens.Span.set_extension("kb_id_", default={}, force=True)
-    spacy.tokens.Span.set_extension("kb_name_", default={}, force=True)
+    spacy.tokens.Span.set_extension("kb_name_", default="", force=True)
     spacy.tokens.Span.set_extension("pred_kb_id_", default={}, force=True)
     
     for doc in puba_corpus:

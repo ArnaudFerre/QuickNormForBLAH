@@ -661,20 +661,30 @@ if __name__ == '__main__':
     batchSize = 64
     
     #nlp = spacy.load("en_core_web_sm")
-   # l_spacy_BB4_hab_train = hf_bb4_into_spacy_corpus([bb4_norm['train']], l_type=["Habitat"], spacyNlp=nlp)
-   # l_spacy_BB4_hab_val = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
+    # l_spacy_BB4_hab_train = hf_bb4_into_spacy_corpus([bb4_norm['train']], l_type=["Habitat"], spacyNlp=nlp)
+    # l_spacy_BB4_hab_val = hf_bb4_into_spacy_corpus([bb4_norm['validation']], l_type=["Habitat"], spacyNlp=nlp)
     l_spacy_BB4_hab_train = pubannotation_to_spacy_corpus(bb4_norm_train_folder, l_type=["Habitat"], spacyNlp=nlp)
     l_spacy_BB4_hab_val = pubannotation_to_spacy_corpus(bb4_norm_dev_folder, l_type=["Habitat"], spacyNlp=nlp)
     l_spacy_BB4_hab_test = pubannotation_to_spacy_corpus(bb4_norm_test_folder, l_type=["Habitat"], spacyNlp=nlp)
 
-   # l_spacyNormalizedBB4_by_quicknorm = twoStep_finetuned_quicknorm(l_spacy_BB4_hab_train, l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, spacyNlp=nlp, verbose=1, mode="pooled_output")
+    # l_spacyNormalizedBB4_by_quicknorm = twoStep_finetuned_quicknorm(l_spacy_BB4_hab_train, l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, spacyNlp=nlp, verbose=1, mode="pooled_output")
     preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_train, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
     l_spacyNormalizedBB4_by_quicknorm_val = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
     l_spacyNormalizedBB4_by_quicknorm_test = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_test, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
-    
+
+    for doc in l_spacyNormalizedBB4_by_quicknorm_test:
+        print("\n", doc)
+        for mention in doc.spans["mentions"]:
+            print(mention, mention._.pred_kb_id_)
+
+    from printers import spacy_into_a2
+    save_path = "datasets/BB4/predictions/"
+    spacy_into_a2(l_spacyNormalizedBB4_by_quicknorm_test, save_file=True, save_path=save_path, pred=True, align_type_onto={"Habitat": "OntoBiotope", "Microorganism": "NCBI_Taxonomy", "Phenotype": "OntoBiotope"})
+    print("BB4 test predictions saved (a2 format) in", save_path)
+
     print_pubannotation(l_spacyNormalizedBB4_by_quicknorm_val, output_folder_dev, "http://pubannotation.org/docs/sourcedb/BB-norm@ldeleger", "bionlp-ost-19-BB-norm-dev", "BB-norm@ldeleger", "OntoBiotope")
     
-    print_pubannotation(l_spacyNormalizedBB4_by_quicknorm_val, output_folder_test, "http://pubannotation.org/docs/sourcedb/BB-norm@ldeleger", "bionlp-ost-19-BB-norm-test", "BB-norm@ldeleger", "OntoBiotope")
+    print_pubannotation(l_spacyNormalizedBB4_by_quicknorm_test, output_folder_test, "http://pubannotation.org/docs/sourcedb/BB-norm@ldeleger", "bionlp-ost-19-BB-norm-test", "BB-norm@ldeleger", "OntoBiotope")
     
     end = time.time()
 

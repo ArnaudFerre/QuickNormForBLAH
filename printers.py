@@ -174,7 +174,7 @@ def writeA2file(a2Filename, content):
         f.write(content)
 
 
-def spacy_into_a2(l_spacy_corpus):
+def spacy_into_a2(l_spacy_corpus, save_file=False, save_path=None, pred=True, align_type_onto=None):
 
     for doc in l_spacy_corpus:
         docName = doc.user_data["document_id"]
@@ -184,19 +184,27 @@ def spacy_into_a2(l_spacy_corpus):
             T_id = mention.id_
             T_number = int(T_id[1:])
             d_mentions[T_number] = dict()
-
-            d_mentions[T_number]["surface"] = mention.text
-            d_mentions[T_number]["kb_id"] = mention._.kb_id_
-            d_mentions[T_number]["kb_name"] = mention._.kb_name_
-
-            print(docName, T_number, d_mentions[T_number])
-            print("\n")
+            #d_mentions[T_number]["surface"] = mention.text
+            if pred == True:
+                d_mentions[T_number]["kb_id"] = mention._.pred_kb_id_
+            else:
+                d_mentions[T_number]["kb_id"] = mention._.kb_id_
+            d_mentions[T_number]["kb_name"] = align_type_onto[mention.label_]
 
         tried_keys = sorted(d_mentions.keys())
         a2content = ""
+        N_number = 1
         for T_number in tried_keys:
-            "N"+str(T_number)
+            s_cui = d_mentions[T_number]["kb_id"]
+            for cui in s_cui:
+                a2content += "N"+str(N_number)+"\t"+d_mentions[T_number]["kb_name"]+" Annotation:T"+str(T_number)+" Referent:"+cui+"\n"
+                N_number += 1
 
+        if save_file == True:
+            if save_path is None:
+                save_path = "./"
+            with open(save_path+docName+".a2", 'w') as fp:
+                fp.write(a2content)
 
 
 
@@ -205,14 +213,16 @@ def spacy_into_a2(l_spacy_corpus):
 # Main
 ######################################################################################################################
 if __name__ == '__main__':
-
+    """
     from loaders import pubannotation_to_spacy_corpus
     import spacy
 
     nlp = spacy.load("en_core_web_sm")
-    l_spacy_BB4_hab_train = pubannotation_to_spacy_corpus("datasets/BB4/bionlp-ost-19-BB-norm-train/", l_type=["Habitat"], spacyNlp=nlp)
+    l_spacy_BB4_hab_train = pubannotation_to_spacy_corpus("datasets/BB4/bionlp-ost-19-BB-norm-train/", l_type=["Habitat", "Microorganism", "Phenotype"], spacyNlp=nlp)
 
-    spacy_into_a2(l_spacy_BB4_hab_train)
+    spacy_into_a2(l_spacy_BB4_hab_train, save_file=True, save_path="datasets/BB4/predictions/", pred=False, align_type_onto={"Habitat": "OntoBiotope", "Microorganism": "NCBI_Taxonomy", "Phenotype": "OntoBiotope"})
+    """
+    # ToDo: add at the end of QuickNorm
 
 
 

@@ -281,10 +281,11 @@ def loader_one_ncbi_fold(l_foldPath):
 # Main
 ######################################################################################################################
 if __name__ == '__main__':
+    pass
 
     #ncbi_disease_to_pubannotation("datasets/NCBI-DC/NCBItrainset_corpus.txt", "datasets/NCBI-DC/pubannotation-train", "http://pubannotation.org/docs/sourcedb/PubMed", "NCBI-Disease-train", "PubMed", "MEDIC")
     #ncbi_disease_to_pubannotation("datasets/NCBI-DC/NCBIdevelopset_corpus.txt", "datasets/NCBI-DC/pubannotation-dev", "http://pubannotation.org/docs/sourcedb/PubMed", "NCBI-Disease-dev", "PubMed", "MEDIC")
     #ncbi_disease_to_pubannotation("datasets/NCBI-DC/NCBItestset_corpus.txt", "datasets/NCBI-DC/pubannotation-test", "http://pubannotation.org/docs/sourcedb/PubMed", "NCBI-Disease-test", "PubMed", "MEDIC")
     # ddd_dataTrain = loader_one_ncbi_fold(["../NCBI/Voff/NCBItrainset_corpus.txt"])
-   # dd_Train = extract_data(ddd_dataTrain, l_type=['CompositeMention', 'Modifier', 'SpecificDisease', 'DiseaseClass'])  # All entity types.
-   # print("loaded.(Nb of mentions in train corpus =", len(dd_Train.keys()), ")")
+    # dd_Train = extract_data(ddd_dataTrain, l_type=['CompositeMention', 'Modifier', 'SpecificDisease', 'DiseaseClass'])  # All entity types.
+    # print("loaded.(Nb of mentions in train corpus =", len(dd_Train.keys()), ")")

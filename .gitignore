@@ -1,5 +1,6 @@
 # tmp batch files
 tmp/
+datasets/BB4/predictions/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
