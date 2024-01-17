@@ -625,6 +625,17 @@ if __name__ == '__main__':
     output_folder_dev = "output/dev"
     output_folder_test = "output/test"
     
+    batchFilePath = "./tmp/"
+  
+    if not os.path.exists(output_folder_dev): 
+        os.makedirs(output_folder_dev)
+        
+    if not os.path.exists(output_folder_test): 
+        os.makedirs(output_folder_test)
+        
+    if not os.path.exists(batchFilePath): 
+        os.makedirs(batchFilePath) 
+
     #bb4_norm = load_dataset(path="bigbio/bionlp_st_2019_bb", name="bionlp_st_2019_bb_norm_source")
     # print_hf_doc(bb4_norm['train'][0])  # A doc in BB4-norm train
     #print("An example in the doc bb4_norm['train'][0]:")
@@ -647,7 +658,6 @@ if __name__ == '__main__':
     PREPROCESS_MODEL = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'
     TF_BERT_model = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'
     
-    batchFilePath = "./tmp/"
     batchSize = 64
     
     #nlp = spacy.load("en_core_web_sm")
