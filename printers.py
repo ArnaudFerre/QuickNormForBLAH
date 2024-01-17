@@ -174,9 +174,31 @@ def writeA2file(a2Filename, content):
         f.write(content)
 
 
-def spacy_into_a2():
-    #Todo
-    pass
+def spacy_into_a2(l_spacy_corpus):
+
+    for doc in l_spacy_corpus:
+        docName = doc.user_data["document_id"]
+
+        d_mentions = dict()
+        for mention in doc.spans["mentions"]:
+            T_id = mention.id_
+            T_number = int(T_id[1:])
+            d_mentions[T_number] = dict()
+
+            d_mentions[T_number]["surface"] = mention.text
+            d_mentions[T_number]["kb_id"] = mention._.kb_id_
+            d_mentions[T_number]["kb_name"] = mention._.kb_name_
+
+            print(docName, T_number, d_mentions[T_number])
+            print("\n")
+
+        tried_keys = sorted(d_mentions.keys())
+        a2content = ""
+        for T_number in tried_keys:
+            "N"+str(T_number)
+
+
+
 
 
 ######################################################################################################################
@@ -184,9 +206,19 @@ def spacy_into_a2():
 ######################################################################################################################
 if __name__ == '__main__':
 
+    from loaders import pubannotation_to_spacy_corpus
+    import spacy
+
+    nlp = spacy.load("en_core_web_sm")
+    l_spacy_BB4_hab_train = pubannotation_to_spacy_corpus("datasets/BB4/bionlp-ost-19-BB-norm-train/", l_type=["Habitat"], spacyNlp=nlp)
+
+    spacy_into_a2(l_spacy_BB4_hab_train)
+
 
 
     sys.exit(0)
+
+
 
     content = getA2File("datasets/BB4/bionlp-ost-19-BB-norm-train/BB-norm-448557_annotations.json")
     writeA2file("datasets/BB4/predictions/BB-norm-448557_annotations.a2", content)

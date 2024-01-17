@@ -135,3 +135,88 @@ def spacy_onto_to_dict(d_spacyOnto,spanKey="synonyms", lower=True):
 
 def ncbi_onto_pubannotation():
     pass
+
+
+
+def extract_data(ddd_data, l_type=[]):
+    dd_data = dict()
+    for fileName in ddd_data.keys():
+        for id in ddd_data[fileName].keys():
+            if ddd_data[fileName][id]["type"] in l_type:
+                dd_data[id] = copy.deepcopy(ddd_data[fileName][id])
+    return dd_data
+
+def loader_one_ncbi_fold(l_foldPath):
+    ddd_data = dict()
+
+    i = 0
+    for foldPath in l_foldPath:
+
+        with open(foldPath, encoding="utf8") as file:
+
+            fileNameWithoutExt, ext = splitext(basename(foldPath))
+            ddd_data[fileNameWithoutExt] = dict()
+
+            notInDoc = True
+            nextAreMentions = False
+            for line in file:
+
+                if line == '\n' and nextAreMentions == True and notInDoc == False:
+                    notInDoc = True
+                    nextAreMentions = False
+
+
+                if nextAreMentions == True and notInDoc == False:
+                    l_line = line.split('\t')
+
+                    exampleId = "ncbi_" + "{number:06}".format(number=i)
+                    ddd_data[fileNameWithoutExt][exampleId] = dict()
+
+                    ddd_data[fileNameWithoutExt][exampleId]["mention"] = l_line[3]
+                    ddd_data[fileNameWithoutExt][exampleId]["type"] = l_line[4]
+
+                    #Parfois une liste de CUIs (des '|' ou des '+'):
+                    cuis = l_line[5].rstrip()
+                    request11 = re.compile('.*\|.*')
+                    request12 = re.compile('.*\+.*')
+                    if request11.match(cuis):
+                        #Composite mentions:
+                        if ddd_data[fileNameWithoutExt][exampleId]["type"] == "CompositeMention":
+                            l_cuis = cuis.split('|')
+                            ddd_data[fileNameWithoutExt][exampleId]["cui"] = l_cuis
+                        else: # Composite mention which are not typed as CompositeMention?
+                            l_cuis = cuis.split('|')
+                            ddd_data[fileNameWithoutExt][exampleId]["cui"] = l_cuis
+
+                    elif request12.match(cuis):
+                        l_cuis = cuis.split('+') #multi-normalization
+                        ddd_data[fileNameWithoutExt][exampleId]["cui"] = l_cuis
+                    else:
+                        if cuis.strip()=="MESH:C535662": # FORMATING ERROR in the initial testfold file of the NCBI Disease Corpus...
+                            ddd_data[fileNameWithoutExt][exampleId]["cui"] = ["C535662"]
+                        else:
+                            ddd_data[fileNameWithoutExt][exampleId]["cui"] = [cuis.strip()]
+
+                    i+=1
+
+
+                request2 = re.compile('^\d*\|a\|')
+                if nextAreMentions==False and request2.match(line) is not None:
+                    nextAreMentions = True
+
+                request3 = re.compile('^\d*\|t\|')
+                if notInDoc==True and request3.match(line) is not None:
+                    notInDoc = False
+
+
+    return ddd_data
+
+
+######################################################################################################################
+# Main
+######################################################################################################################
+if __name__ == '__main__':
+
+    ddd_dataTrain = loader_one_ncbi_fold(["../NCBI/Voff/NCBItrainset_corpus.txt"])
+    dd_Train = extract_data(ddd_dataTrain, l_type=['CompositeMention', 'Modifier', 'SpecificDisease', 'DiseaseClass'])  # All entity types.
+    print("loaded.(Nb of mentions in train corpus =", len(dd_Train.keys()), ")")
