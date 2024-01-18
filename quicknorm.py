@@ -578,12 +578,15 @@ def twoStep_finetuned_quicknorm_train(l_trainDoc, d_spacyOnto, PREPROCESS_MODEL,
 
     return preprocessor, weights, bert_encoder, TFmodel
 
-def twoStep_finetuned_quicknorm_predict(l_valDoc, d_spacyOnto, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output"):
+def twoStep_finetuned_quicknorm_predict(l_valDoc, d_spacyOnto, PREPROCESS_MODEL, TF_BERT_MODEL, weights, TFmodel, verbose=0, mode="pooled_output"):
     
     # spacy onto to simple dictionary
     lowerCase = True
     syno = "synonyms"
     d_onto = spacy_onto_to_dict(d_spacyOnto,spanKey=syno, lower=lowerCase)
+    
+    preprocessor = hub.KerasLayer(PREPROCESS_MODEL)
+    bert_encoder = hub.KerasLayer(TF_BERT_MODEL, trainable=True)
     
     ######
     # Regression prediction:
@@ -667,18 +670,16 @@ if __name__ == '__main__':
     l_spacy_BB4_hab_train = pubannotation_to_spacy_corpus(bb4_norm_train_folder, l_type=["Habitat"], spacyNlp=nlp)
     l_spacy_BB4_hab_val = pubannotation_to_spacy_corpus(bb4_norm_dev_folder, l_type=["Habitat"], spacyNlp=nlp)
     l_spacy_BB4_hab_test = pubannotation_to_spacy_corpus(bb4_norm_test_folder, l_type=["Habitat"], spacyNlp=nlp)
-    l_spacy_BB4_hab_traindev = pubannotation_to_spacy_corpus(bb4_norm_traindev_folder, l_type=["Habitat"], spacyNlp=nlp)
+ #   l_spacy_BB4_hab_traindev = pubannotation_to_spacy_corpus(bb4_norm_traindev_folder, l_type=["Habitat"], spacyNlp=nlp)
 
 
     # l_spacyNormalizedBB4_by_quicknorm = twoStep_finetuned_quicknorm(l_spacy_BB4_hab_train, l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, spacyNlp=nlp, verbose=1, mode="pooled_output")
 
-    #preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_train, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
-    preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_traindev, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
+    preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_train, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
+  #  preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_traindev, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
 
-    #l_spacyNormalizedBB4_by_quicknorm_val = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
-    l_spacyNormalizedBB4_by_quicknorm_test = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_test, d_spacyOBT, preprocessor, bert_encoder, weights, TFmodel, verbose=0, mode="pooled_output")
-
-
+    l_spacyNormalizedBB4_by_quicknorm_val = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights, TFmodel, verbose=0, mode="pooled_output")
+    l_spacyNormalizedBB4_by_quicknorm_test = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_test, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights, TFmodel, verbose=0, mode="pooled_output")
 
     from printers import spacy_into_a2
     save_path = "datasets/BB4/predictions/"
@@ -690,13 +691,14 @@ if __name__ == '__main__':
     #print_pubannotation(l_spacyNormalizedBB4_by_quicknorm_test, output_folder_test, "http://pubannotation.org/docs/sourcedb/BB-norm@ldeleger", "bionlp-ost-19-BB-norm-test", "BB-norm@ldeleger", "OntoBiotope")
     
     end = time.time()
-
+    """
     for doc in l_spacyNormalizedBB4_by_quicknorm_test:
         print(doc.user_data["document_id"])
         for mention in doc.spans["mentions"]:
             for cuiPred in list(mention._.pred_kb_id_):
                 if cuiPred not in mention._.kb_id_:
                     print(mention.text, "\t", d_spacyOBT[list(mention._.pred_kb_id_)[0]].text)
+    """
 
     """
     for doc in l_spacyNormalizedBB4_by_quicknorm:

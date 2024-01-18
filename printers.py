@@ -202,13 +202,14 @@ def spacy_into_a2(l_spacy_corpus, save_file=False, save_path=None, pred=True, al
                 N_number += 1
                 nb_mentions += 1
 
-        print("\nNumber of mentions:", nb_mentions)
 
         if save_file == True:
             if save_path is None:
                 save_path = "./"
             with open(save_path+docName+".a2", 'w') as fp:
                 fp.write(a2content)
+                
+    print("\nNumber of mentions:", nb_mentions)
 
 
 
