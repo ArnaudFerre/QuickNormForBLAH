@@ -176,6 +176,7 @@ def writeA2file(a2Filename, content):
 
 def spacy_into_a2(l_spacy_corpus, save_file=False, save_path=None, pred=True, align_type_onto=None):
 
+    nb_mentions = 0
     for doc in l_spacy_corpus:
         docName = doc.user_data["document_id"]
 
@@ -199,6 +200,9 @@ def spacy_into_a2(l_spacy_corpus, save_file=False, save_path=None, pred=True, al
             for cui in s_cui:
                 a2content += "N"+str(N_number)+"\t"+d_mentions[T_number]["kb_name"]+" Annotation:T"+str(T_number)+" Referent:"+cui+"\n"
                 N_number += 1
+                nb_mentions += 1
+
+        print("\nNumber of mentions:", nb_mentions)
 
         if save_file == True:
             if save_path is None:
