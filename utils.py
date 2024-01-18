@@ -216,7 +216,7 @@ def get_vector_from_spacy_mention(mentionIndex, associatedInputs, associatedOutp
 
 def get_vectors(labels, TFhubPreprocessModel, TFhubModel, mode="sequence_output"):
     
-    print("Create Label vectors...")
+    #print("Create Label vectors...")
 
     dim = TFhubModel.variables[0].shape[1]
 

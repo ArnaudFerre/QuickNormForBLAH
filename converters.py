@@ -87,7 +87,7 @@ def create_onto_from_ontobiotope_dict_v2(dd_obt, spacyNlp):
     d_spacyOBT = dict()
     for cui in dd_obt.keys():
         d_spacyOBT[cui] = spacyNlp(dd_obt[cui]["label"])
-        d_spacyOBT[cui].user_data["parents"] = dd_obt[cui]["parents"]
+        d_spacyOBT[cui].user_data["parents"] = dd_obt[cui]["parents"]  # There must always be parents list
         d_spacyOBT[cui].user_data["synonyms"] = list()
         for synonym in dd_obt[cui]["tags"]:
             d_spacyOBT[cui].user_data["synonyms"].append(spacyNlp(synonym))
