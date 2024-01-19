@@ -527,6 +527,9 @@ if __name__ == '__main__':
     print("training done.")
 
     print("\nPrediction...")
+    l_NCBI_entity_types = ["SpecificDisease", "DiseaseClass", "Modifier", "CompositeMention"]
+    l_spacy_NCBI_dev = pubannotation_to_spacy_corpus(ncbi_norm_dev_folder, l_type=l_NCBI_entity_types, spacyNlp=nlp)
+    print("\nNb of doc in train:", len(l_spacy_NCBI_train))
     l_spacyNormalizedNCBI_by_quicknorm_dev = twoStep_finetuned_quicknorm_predict(l_spacy_NCBI_dev, dd_medic,
                                                                                  preprocessor, bert_encoder, weights,
                                                                                  TFmodel, verbose=0,
