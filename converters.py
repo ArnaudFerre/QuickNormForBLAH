@@ -115,7 +115,9 @@ def spacy_tags_from_onto_to_textual_tags_list(d_spacyOnto, spanKey="synonyms", l
     return l_tags
 
 def spacy_onto_to_dict(d_spacyOnto,spanKey="synonyms", lower=True):
-    
+    """
+    # Depreciated? (because SpaCy onto is sub-optimized)
+    """
     # spacy onto to simple dictionary
     d_onto = dict()
     for cui in d_spacyOnto.keys():

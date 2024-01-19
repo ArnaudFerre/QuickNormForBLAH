@@ -8,7 +8,7 @@
 
 import copy
 
-from tensorflow import math, zeros
+from tensorflow import math, zeros, convert_to_tensor, int32, gather
 import numpy
 
 from converters import spacy_tags_from_onto_to_textual_tags_list
@@ -181,8 +181,25 @@ def get_list_of_tag_vectors(d_spacyOnto, TFhubPreprocessModel, TFhubModel, spanK
 
     return dd_conceptVectors, k
 
+######
 
-def get_vector_from_spacy_mention(mentionIndex, associatedInputs, associatedOutputs, dim, unitNorm=True):
+def get_vector_from_spacy_mention(mentionIndex, associatedInputs, associatedOutputs, dim):
+    """
+    Description: Optimized version of these calculation (see get_vector_from_spacy_mention_old() for comparison).
+    """
+    last_index = numpy.argmax(associatedInputs["input_mask"][mentionIndex] <= 0)
+    mention_mask = associatedInputs["input_mask"][mentionIndex]  # e.g. [1 1 1 1 0 ... 0], shape=(128,), dtype=int32)
+    sequence_output = associatedOutputs["sequence_output"][mentionIndex]
+    valid_indices = numpy.where(numpy.logical_and(mention_mask > 0, numpy.logical_and(0 < numpy.arange(len(mention_mask)), numpy.arange(len(mention_mask)) < last_index - 1)))[0]
+    # e.g. [1 2]
+    valid_indices_tensor = convert_to_tensor(valid_indices, dtype=int32)
+    mentionVector = math.reduce_sum(gather(sequence_output, valid_indices_tensor), axis=0)
+    mentionVector = math.scalar_mul(1 / numpy.linalg.norm(mentionVector), mentionVector)
+
+    return mentionVector
+
+
+def get_vector_from_spacy_mention_old(mentionIndex, associatedInputs, associatedOutputs, dim, unitNorm=True):
     """
     Description: deprecated. Vectors of mentions are now calculated internally by the language model.
     """
@@ -214,9 +231,36 @@ def get_vector_from_spacy_mention(mentionIndex, associatedInputs, associatedOutp
 
     return mentionVector
 
-def get_vectors(labels, TFhubPreprocessModel, TFhubModel, mode="sequence_output"):
-    
-    #print("Create Label vectors...")
+######
+
+def get_vectors(l_labels, TFhubPreprocessModel, TFhubModel, mode="sequence_output"):
+
+    dim = TFhubModel.variables[0].shape[1]
+
+    # Preprocess the input mentions:
+    inputs = TFhubPreprocessModel(l_labels)
+    # Compute the mention representations at the output of BERT:
+    outputs = TFhubModel(inputs)
+
+    d_label2vec = dict()
+    if mode == "sequence_output":
+        for k, label in enumerate(l_labels):
+            if label not in d_label2vec.keys():
+                d_label2vec[label] = get_vector_from_spacy_mention(k, inputs, outputs, dim)
+    elif mode == "pooled_output":
+        for k, label in enumerate(l_labels):
+            if label not in d_label2vec.keys():
+                d_label2vec[label] = get_vector_from_spacy_mention_pooled(k, outputs)
+
+    l_vectors = list()
+    for label in l_labels:
+        l_vectors.append(d_label2vec[label])
+            
+    return l_vectors
+
+
+def get_vectors_old(labels, TFhubPreprocessModel, TFhubModel, mode="sequence_output"):
+    # print("Create Label vectors...")
 
     dim = TFhubModel.variables[0].shape[1]
 
@@ -225,16 +269,17 @@ def get_vectors(labels, TFhubPreprocessModel, TFhubModel, mode="sequence_output"
 
     # Compute the mention representations at the output of BERT:
     outputs = TFhubModel(inputs)
-    
-    vectors = []
+
+    l_vectors = []
     for k, label in enumerate(labels):
         if mode == "sequence_output":
-            vectors.append(get_vector_from_spacy_mention(k, inputs, outputs, dim, unitNorm=True))
+            l_vectors.append(get_vector_from_spacy_mention(k, inputs, outputs, dim))
         elif mode == "pooled_output":
-            vectors.append(get_vector_from_spacy_mention_pooled(k, outputs, unitNorm=True))
-            
-    return(vectors)
+            l_vectors.append(get_vector_from_spacy_mention_pooled(k, outputs))
 
+    return l_vectors
+
+######
 
 def get_vectors_as_dict(onto, TFhubPreprocessModel, TFhubModel, mode="sequence_output"):
     

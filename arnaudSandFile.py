@@ -145,7 +145,7 @@ def get_nearest_concept_in_batch(l_docWithMentions, numberOfTags, predMatrix, dd
     return dd_predictions, maxScores
 
 
-def get_nearest_concept(l_docWithMentions, numberOfMentions, predMatrix, d_onto, TFhubPreprocessModel, TFhubModel,
+def get_nearest_concept(l_docWithMentions, numberOfMentions, predMatrix, dd_onto, TFhubPreprocessModel, TFhubModel,
                         mode="sequence_output"):
     batch_size = 1000
 
@@ -157,11 +157,10 @@ def get_nearest_concept(l_docWithMentions, numberOfMentions, predMatrix, d_onto,
     current_size = 0
     dd_concepts = dict()
 
-    for cui in d_onto:
+    for cui in dd_onto:
         if (current_size == batch_size):
             # create concept embeddings for the current batch
-            dd_conceptVectors, numberOfTags = get_vectors_as_dict(dd_concepts, TFhubPreprocessModel, TFhubModel,
-                                                                  mode=mode)
+            dd_conceptVectors, numberOfTags = get_vectors_as_dict(dd_concepts, TFhubPreprocessModel, TFhubModel, mode=mode)
             # compute nearest neighbors for the current batch and keep track of max scores
             dd_predictions, maxScores = get_nearest_concept_in_batch(l_docWithMentions, numberOfTags, predMatrix,
                                                                      dd_conceptVectors, dd_predictions, maxScores)
@@ -170,7 +169,11 @@ def get_nearest_concept(l_docWithMentions, numberOfMentions, predMatrix, d_onto,
             dd_concepts = dict()
 
         # store current concept
-        dd_concepts[cui] = d_onto[cui]
+        l_tags = list()
+        l_tags.append(dd_onto[cui]["label"].lower())
+        for tag in dd_onto[cui]["tags"]:
+            l_tags.append(tag.lower())
+        dd_concepts[cui] = l_tags
         current_size += 1
 
     # process the remainder
@@ -188,37 +191,6 @@ def get_nearest_concept(l_docWithMentions, numberOfMentions, predMatrix, d_onto,
             i += 1
 
     return l_docWithMentions
-
-
-def prepare_training_data(l_trainDoc, dd_conceptVectors, d_spacyOnto, addLabels=True, addMentions=True):
-    l_mentions = list()
-    l_conceptVectors = list()
-
-    if addMentions == True:
-        nbMentions = 0
-        for doc in l_trainDoc:
-            nbMentions += len(doc.spans["mentions"])
-            for mention in doc.spans["mentions"]:
-                for cui in list(mention._.kb_id_):
-                    for tag in dd_conceptVectors[cui].keys():
-                        l_conceptVectors.append(dd_conceptVectors[cui][tag])
-                        l_mentions.append(mention.text.lower())
-        nbConcepts = len(d_spacyOnto.keys())
-        print("\tNumber of training mentions:", nbMentions, "- number of concepts:", nbConcepts)
-
-    if addLabels == True:
-        # Add labels/synonyms to training data: (aim: stabilizing the output vectors)
-        # Number of examples before: 1945 1945
-        for cui in d_spacyOnto.keys():
-            for tag in dd_conceptVectors[cui].keys():
-                l_conceptVectors.append(dd_conceptVectors[cui][tag])
-                l_mentions.append(tag)
-
-    if addLabels == False and addMentions == False:
-        print("ERROR: need at least to train on labels or on traning mentions")
-        sys.exit(0)
-
-    return l_mentions, l_conceptVectors
 
 
 def write_batch(l_mentions, concept_vectors, numberInBatch, batchNb, batchSize, batchFilePath):
@@ -247,7 +219,7 @@ def write_batch(l_mentions, concept_vectors, numberInBatch, batchNb, batchSize, 
     file_object.close()
 
 
-def prepare_training_data_in_batches(l_trainDoc, d_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
+def prepare_training_data_in_batches(l_trainDoc, dd_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
                                      addLabels=True, addMentions=True, mode="pooled_output"):
     # empty batch folder
     files = glob.glob(batchFilePath + '/batch*')
@@ -258,6 +230,7 @@ def prepare_training_data_in_batches(l_trainDoc, d_onto, batchFilePath, batchSiz
     batchNb = 0
     nbMentions = 0
 
+    print(time.strftime("%H:%M:%S", time.localtime()), "(beginning for mentions...)")
     if addMentions == True:
         l_mentions = []
         l_concepts = []
@@ -266,34 +239,35 @@ def prepare_training_data_in_batches(l_trainDoc, d_onto, batchFilePath, batchSiz
         for doc in l_trainDoc:
             nbMentions += len(doc.spans["mentions"])
             for mention in doc.spans["mentions"]:
+                l_tags = list()
                 for cui in list(mention._.kb_id_):
+                    l_tags.append(dd_onto[cui]["label"].lower())
+                    for tag in dd_onto[cui]["tags"]:
+                        l_tags.append(tag.lower())
+                for tag in l_tags:
+                    count += 1
+                    numberInBatch = count % batchSize
+                    l_mentions.append(" ".join(mention.text.lower().split()))
+                    l_concepts.append(tag)
 
-                    # To correct bad annotations (annotations with alter CUI)
-                    if cui not in d_onto.keys():
-                        print(doc.user_data["document_id"], "\t-\taltCUI:", cui)
-                    else:
+                    if numberInBatch == (batchSize - 1):
 
-                        for tag in d_onto[cui]:
-                            count += 1
-                            numberInBatch = count % batchSize
-                            l_mentions.append(" ".join(mention.text.lower().split()))
-                            l_concepts.append(tag)
+                        # get_vectors is relatively expensive (ToDo: optimization?):
+                        concept_vectors = get_vectors(l_concepts, preprocessor, bert_encoder, mode=mode)
 
-                            if numberInBatch == (batchSize - 1):
-                                # get concept vectors
-                                concept_vectors = get_vectors(l_concepts, preprocessor, bert_encoder, mode=mode)
-                                # write batch
-                                write_batch(l_mentions, concept_vectors, numberInBatch, batchNb, batchSize, batchFilePath)
-                                # re-initialize
-                                batchNb += 1
-                                l_mentions = []
-                                l_concepts = []
+                        # Writing is relatively fast:
+                        write_batch(l_mentions, concept_vectors, numberInBatch, batchNb, batchSize, batchFilePath)
+                        # re-initialize:
+                        batchNb += 1
+                        l_mentions = []
+                        l_concepts = []
 
-        # Deal with the last batch
+        # Deal with the last batch (if there at least one another mention)
         if (len(l_mentions) > 0):
             concept_vectors = get_vectors(l_concepts, preprocessor, bert_encoder, mode=mode)
             write_batch(l_mentions, concept_vectors, numberInBatch, batchNb, batchSize, batchFilePath)
 
+    print(time.strftime("%H:%M:%S", time.localtime()), "(beginning for labels...)")
     if addLabels == True:
         # Add labels/synonyms to training data: (aim: stabilizing the output vectors)
         # Number of examples before: 1945 1945
@@ -302,8 +276,12 @@ def prepare_training_data_in_batches(l_trainDoc, d_onto, batchFilePath, batchSiz
         l_mentions = []
         count = 0
         numberInBatch = 0
-        for cui in d_onto:
-            for tag in d_onto[cui]:
+        for cui in dd_onto:
+            l_tags = list()
+            l_tags.append(dd_onto[cui]["label"].lower())
+            for tag in dd_onto[cui]["tags"]:
+                l_tags.append(tag.lower())
+            for tag in l_tags:
                 count += 1
                 numberInBatch = count % batchSize
                 l_mentions.append(tag)
@@ -432,160 +410,11 @@ def submodel_with_batches(preprocessor, bert_encoder, trainingDataPath, epoch=10
     return preprocessor, bert_encoder, TFmodel
 
 
-def twoStep_finetuned_quicknorm(l_trainDoc, l_valDoc, d_spacyOnto, PREPROCESS_MODEL, TF_BERT_MODEL, spacyNlp=None,
-                                verbose=0, mode="pooled_output"):
-    """
-    ToDo: keep the trained dense layer ; try ONLY labels first (here, labels and mentions)
-    ToDO: train without the easy prediction from an exact match (to focus on hard case and gain speed)
-    ToDo: estimate the gain/loss in spped and accyracy with first beginning with exact match
-
-    # < 0,600 with samples+labels for the two steps (thus more than 1 pt less, and moreover, more than 3min to calculate)
-    400 sec for Accuracy: 0.619 with 10 epochs with labels+mentions then 20 epochs with training samples (logcosh: 3.7070e-04) - 6min40sec
-    403 sec for Accuracy: 0.612                                                                 (logcosh: 3.6927e-04)
-    426 sec for Accuracy: 0.603                                                                 (logcosh: 3.8254e-04)
-    362 sec for Accuracy: 0.605                                                                 (logcosh: 3.5360e-04)
-    381 sec for Accuracy: 0.615                                                                 (logcosh: 3.5936e-04)
-    402 sec for Accuracy: 0.618                                                                 (logcosh: 4.0720e-04)
-
-    412 sec for Accuracy: 0.621 with 10 epochs with shuffled labels+mentions then 20 epochs with training samples (logcosh: 3.3993e-04)
-    370 sec for Accuracy: 0.609
-    384 sec for Accuracy: 0.597
-    411 sec for Accuracy: 0.585
-    383 sec for Accuracy: 0.620
-    418 sec for Accuracy: 0.600
-    419 sec for Accuracy: 0.617
-
-    420 sec for Accuracy: 0.619 with 10 epochs with shuffled labels+mentions then 10 with shuffled training samples then 10 epochs with training samples (logcosh: 1.7926e-04)
-    439 sec for Accuracy: 0.595
-    439 sec for Accuracy: 0.613
-    432 sec for Accuracy: 0.613
-
-    497 sec for Accuracy: 0.600 with 10 epochs with shuffled labels+mentions then 10 with shuffled training samples then 20 epochs with training samples (logcosh: 1.9844e-04)
-    500 sec for Accuracy: 0.595
-
-    457 sec for Accuracy: 0.613 with 10 epochs with shuffled labels+mentions then 10 with shuffled training samples then 15 epochs with training samples (logcosh: 1.9844e-04)
-    457 sec for Accuracy: 0.601
-
-    365 sec for Accuracy: 0.606 with 8 epochs with labels then 20 epochs with training samples (logcosh: 4.1877e-04)
-    380 sec for Accuracy: 0.603 with 8 epochs with shuffled labels+mentions then 20 epochs with training samples (logcosh: 4.1877e-04)
-    370 sec for Accuracy: 0.606
-
-    422 sec for Accuracy: 0.602 with 20 epochs with shuffled labels+mentions
-    423 sec for Accuracy: 0.611
-
-
-    # Round 1 only on onto, then round 2 only on training mentions:
-    333 sec for Accuracy: 0.52? with 10 epochs with labels then 20 epochs with training samples (logcosh: 4.9995e-04)
-    393 sec for Accuracy: 0.553 with 10 epochs with labels then 30 epochs with training samples (logcosh: 4.4657e-04)
-    405 sec for Accuracy: 0.576 with 10 epochs with labels then 10, 20 epochs with training samples (logcosh: 2.6160e-04)
-    417 sec for Accuracy: 0.538 with 10, 5 epochs with labels then 20 epochs with training samples (logcosh: 3.3862e-04)
-    360 sec for Accuracy: 0.567 with 10 epochs with labels then 10, 10 epochs with training samples (logcosh: 2.6751e-04)
-    432 sec for Accuracy: 0.551 with 10 epochs with labels then 5, 5, 20 epochs with training samples (logcosh: 1.1226e-04)
-
-    343 sec for Accuracy: 0.597 with 10 epochs with labels then 10 epochs with training samples
-
-    476 sec for Accuracy: 0.59 with 10 epochs with shuffled labels+mentions then 30 epochs with training samples (logcosh: 2.9728e-04)
-    470 sec for Accuracy: 0.583
-
-    323 sec for Accuracy: 0.587 with 5 epochs with shuffled labels+mentions then 20 epochs with training samples (logcosh: 3.6258e-04)
-    314 sec for Accuracy: 0.572
-
-    424 sec for Accuracy: 0.588 with 10 epochs with shuffled labels+mentions then 20 epochs with shuffled training samples (logcosh: 3.3050e-04)
-    425 sec for Accuracy: 0.598
-
-    507 sec for Accuracy: 0.608 with 20 epochs with shuffled labels+mentions, then 10 epochs with training samples ()
-    548 sec for Accuracy: 0.596
-    520 sec for Accuracy: 0.592
-
-    401 sec for Accuracy: 0.57? with 10 epochs with labels+mentions then 20 epochs with shuffled training samples (logcosh: 3.4910e-04)
-    411 sec for Accuracy: 0.588
-
-    453 sec for Accuracy: 0.611 with 10 epochs with labels then 30 epochs with training samples (logcosh: 3.5865e-04)
-    569 sec for Accuracy: 0.600 with 20 epochs with labels then 20 epochs with training samples (logcosh: 4.1428e-04)
-
-    501 sec for Accuracy: 0.601 with 15 epochs with labels then 20 epochs with training samples (logcosh: 3.8690e-04)
-    438 sec for Accuracy: 0.588 with 10 epochs with labels then 25 epochs with training samples (logcosh: 3.6593e-04)
-    362 sec for Accuracy: 0.595 with 10 epochs with labels then 15 epochs with training samples (logcosh: 3.7738e-04)
-    1051 ? for Accuracy: 0.616 with 10 then 5 epochs with labels then 15(20?) epochs with training samples (logcosh: 1.1240e-04)
-    584 sec for Accuracy: 0.594 with 5 then 5 epochs with labels then 15(20?) epochs with training samples (logcosh: 1.9872e-04)
-    ??? sec for Accuracy: 0.604 with 10 then 5 epochs with labels then 20 epochs with training samples (logcosh: 1.0310e-04)
-    10, then training samples 5, 20 : fail
-
-    574 sec for Accuracy: 0.603 with 30 epochs with shuffled labels+mentions
-    777 sec for Accuracy: 0.600 with 40 epochs with shuffled labels+mentions
-
-    NB: C-Norm on BB4-Hab = 0.633
-    1644 sec for Accuracy: 0.579 for a bigger Small BERT  with 10 epochs with labels+mentions then 20 epochs with training samples (logcosh: 3.0542e-04)
-    """
-
-    ######
-    # Loading TF Hub model
-    ######
-    preprocessor = hub.KerasLayer(PREPROCESS_MODEL)
-    bert_encoder = hub.KerasLayer(TF_BERT_MODEL, trainable=True)
-
-    ######
-    # Target finetuning:
-    ######
-    labelVectorMode = "sequence_output"  # "sequence_output" / "pooled_output" (stangely work less)
-
-    dd_conceptVectors, nbTags = get_list_of_tag_vectors(d_spacyOnto, preprocessor, bert_encoder, spanKey="synonyms",
-                                                        lower=True, mode=labelVectorMode)
-    print("\t", nbTags, "tags embeddings loaded.")
-    l_mentions, l_conceptVectors = prepare_training_data(l_trainDoc, dd_conceptVectors, d_spacyOnto, addLabels=True,
-                                                         addMentions=True)
-    print("Number of training samples:", len(l_mentions))
-    preprocessor, bert_encoder, TFmodel = submodel(l_mentions, l_conceptVectors, preprocessor, bert_encoder,
-                                                   d_spacyOnto, epoch=10, patience=30, delta=0.0001, verbose=1,
-                                                   shuffle=False)
-    # del TFmodel
-    # del dd_conceptVectors
-
-    print("\n\n")
-
-    dd_conceptVectors, nbTags = get_list_of_tag_vectors(d_spacyOnto, preprocessor, bert_encoder, spanKey="synonyms",
-                                                        lower=True, mode=labelVectorMode)
-    l_mentions, l_conceptVectors = prepare_training_data(l_trainDoc, dd_conceptVectors, d_spacyOnto, addLabels=False,
-                                                         addMentions=True)
-    print("Number of training samples:", len(l_mentions))
-    preprocessor, bert_encoder, TFmodel = submodel(l_mentions, l_conceptVectors, preprocessor, bert_encoder,
-                                                   d_spacyOnto, epoch=20, patience=30, delta=0.0001, verbose=1,
-                                                   shuffle=False)
-
-    ######
-    # Regression prediction:
-    ######
-    print("\tRegression prediction...")
-    nbMentionsInPred = 0
-    for doc in l_valDoc:
-        nbMentionsInPred += len(doc.spans["mentions"])
-    print("\tNumber of mentions for prediction:", nbMentionsInPred)
-    dim = bert_encoder.variables[0].shape[1]
-    Y_pred = numpy.zeros((nbMentionsInPred, dim))
-    # Todo: optimize with predicting a full batch a the same time (not so helpful here because quick calculation with a dense layer)
-    i = 0
-    for doc in l_valDoc:
-        for mention in list(doc.spans["mentions"]):
-            x_test = [mention.text.lower()]
-            Y_pred[i] = TFmodel.predict(x_test, verbose=0)[0]  # result of the regression for the i-th mention.
-            i += 1
-    print("\t\tDone.")
-
-    ######
-    # Nearest neighbours calculation for each mention and CUI attribution:
-    ######
-    l_valDoc = get_nearest_cui(l_valDoc, nbTags, Y_pred, dd_conceptVectors)
-    del dd_conceptVectors
-
-    return l_valDoc
-
-
-def twoStep_finetuned_quicknorm_train(l_trainDoc, d_spacyOnto, PREPROCESS_MODEL, TF_BERT_MODEL, batchFilePath,
+def twoStep_finetuned_quicknorm_train(l_trainDoc, dd_onto, PREPROCESS_MODEL, TF_BERT_MODEL, batchFilePath,
                                       batchSize, verbose=0, mode="pooled_output"):
     # spacy onto to simple dictionary
     lowerCase = True
     syno = "synonyms"
-    d_onto = spacy_onto_to_dict(d_spacyOnto, spanKey=syno, lower=lowerCase)
 
     ######
     # Loading TF Hub model
@@ -598,10 +427,13 @@ def twoStep_finetuned_quicknorm_train(l_trainDoc, d_spacyOnto, PREPROCESS_MODEL,
     ######
     labelVectorMode = "sequence_output"  # "sequence_output" / "pooled_output" (stangely work less)
 
-    prepare_training_data_in_batches(l_trainDoc, d_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
+    print("Prepating training data...")
+    prepare_training_data_in_batches(l_trainDoc, dd_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
                                      addLabels=True, addMentions=True, mode=labelVectorMode)
-    print("training data prepared.")
-    preprocessor, bert_encoder, TFmodel = submodel_with_batches(preprocessor, bert_encoder, batchFilePath, epoch=10,
+    print(time.strftime("%H:%M:%S", time.localtime()), "training data prepared.")
+
+    # For BB4, 10 epochs. But too long for NCBI-DC, so reduce to 4
+    preprocessor, bert_encoder, TFmodel = submodel_with_batches(preprocessor, bert_encoder, batchFilePath, epoch=3,
                                                                 patience=30, delta=0.0001, verbose=1, shuffle=False)
     # del TFmodel
 
@@ -609,20 +441,17 @@ def twoStep_finetuned_quicknorm_train(l_trainDoc, d_spacyOnto, PREPROCESS_MODEL,
 
     weights = bert_encoder.get_weights()
 
-    prepare_training_data_in_batches(l_trainDoc, d_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
+    prepare_training_data_in_batches(l_trainDoc, dd_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
                                      addLabels=False, addMentions=True, mode=labelVectorMode)
-    preprocessor, bert_encoder, TFmodel = submodel_with_batches(preprocessor, bert_encoder, batchFilePath, epoch=20,
+    # For BB4, 20 epochs. But too long for NCBI-DC, so reduce to 10
+    preprocessor, bert_encoder, TFmodel = submodel_with_batches(preprocessor, bert_encoder, batchFilePath, epoch=10,
                                                                 patience=30, delta=0.0001, verbose=1, shuffle=False)
 
     return preprocessor, weights, bert_encoder, TFmodel
 
 
-def twoStep_finetuned_quicknorm_predict(l_valDoc, d_spacyOnto, preprocessor, bert_encoder, weights, TFmodel, verbose=0,
+def twoStep_finetuned_quicknorm_predict(l_valDoc, dd_onto, preprocessor, bert_encoder, weights, TFmodel, verbose=0,
                                         mode="pooled_output"):
-    # spacy onto to simple dictionary
-    lowerCase = True
-    syno = "synonyms"
-    d_onto = spacy_onto_to_dict(d_spacyOnto, spanKey=syno, lower=lowerCase)
 
     ######
     # Regression prediction:
@@ -648,7 +477,7 @@ def twoStep_finetuned_quicknorm_predict(l_valDoc, d_spacyOnto, preprocessor, ber
     # Nearest neighbours calculation for each mention and CUI attribution:
     ######
     bert_encoder.set_weights(weights)
-    l_valDoc = get_nearest_concept(l_valDoc, nbMentionsInPred, Y_pred, d_onto, preprocessor, bert_encoder,
+    l_valDoc = get_nearest_concept(l_valDoc, nbMentionsInPred, Y_pred, dd_onto, preprocessor, bert_encoder,
                                    mode=labelVectorMode)
 
     return l_valDoc
@@ -660,48 +489,50 @@ def twoStep_finetuned_quicknorm_predict(l_valDoc, d_spacyOnto, preprocessor, ber
 if __name__ == '__main__':
 
     print("\nQuickNorm on NCBI-DC:")
+
     import time
     start = time.time()
+    t = time.localtime()
+    current_time = time.strftime("%H:%M:%S", t)
+    print(current_time)
 
-    ncbi_norm_traindev_folder = "datasets/BB4/bionlp-ost-19-BB-norm-traindev/"
-    ncbi_norm_test_folder = "datasets/BB4/bionlp-ost-19-BB-norm-train/"
-    ncbi_norm_dev_folder = "datasets/NCBI-DC/pubannotation-dev/"
-    ncbi_norm_train_folder = "datasets/NCBI-DC/pubannotation-train/"
+    ncbi_norm_traindev_folder = "datasets/NCBI-DC/pubannotation-traindev-2/"
+    ncbi_norm_test_folder = "datasets/NCBI-DC/pubannotation-test-2/"
+    ncbi_norm_dev_folder = "datasets/NCBI-DC/pubannotation-dev-2/"
+    ncbi_norm_train_folder = "datasets/NCBI-DC/pubannotation-train-2/"
+
+    nlp = spacy.load("en_core_web_sm")
+    l_NCBI_entity_types = ["SpecificDisease", "DiseaseClass", "Modifier", "CompositeMention"]
 
     print("Create an ontology in SpaCy (a list of concepts, each one as a SpaCy doc):")
     from loaders import loader_medic
     dd_medic = loader_medic("datasets/NCBI-DC/CTD_diseases_dnorm.tsv")
     print("MEDIC loaded.", len(dd_medic.keys()))
-    print("Create SpaCy onto... (not optimized...)")
-    nlp = spacy.load("en_core_web_sm")
-    d_spacy_MEDIC = create_onto_from_ontobiotope_dict_v2(dd_medic, nlp)  # WARNING: Take time due to SpaCy!
-    print("MEDIC converted in SpaCy format.", len(d_spacy_MEDIC.keys()))
 
-    l_type = BB4_dict = ["SpecificDisease", "DiseaseClass", "Modifier", "CompositeMention"]
-    # {"SpecificDisease": "MEDIC", "DiseaseClass": "MEDIC", "Modifier": "MEDIC", "CompositeMention": "MEDIC"}
-    l_spacy_NCBI_train = pubannotation_to_spacy_corpus(ncbi_norm_train_folder, l_type=l_type, spacyNlp=nlp)
-    l_spacy_NCBI_dev = pubannotation_to_spacy_corpus(ncbi_norm_dev_folder, l_type=l_type, spacyNlp=nlp)
+    l_NCBI_entity_types = ["SpecificDisease", "DiseaseClass", "Modifier", "CompositeMention"]
+    l_spacy_NCBI_train = pubannotation_to_spacy_corpus(ncbi_norm_train_folder, l_type=l_NCBI_entity_types, spacyNlp=nlp)
+    print("\nNb of doc in train:", len(l_spacy_NCBI_train))
 
     print("\nTraining...")
     batchFilePath = "./tmp/"
     PREPROCESS_MODEL = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'
     TF_BERT_model = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'
-    batchSize = 64  # 256  # 64
+    batchSize = 256  # 64
 
     preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_NCBI_train,
-                                                                                     d_spacy_MEDIC, PREPROCESS_MODEL,
+                                                                                     dd_medic, PREPROCESS_MODEL,
                                                                                      TF_BERT_model, batchFilePath,
                                                                                      batchSize, verbose=1,
                                                                                      mode="pooled_output")
     print("training done.")
 
     print("\nPrediction...")
-    l_spacyNormalizedNCBI_by_quicknorm_dev = twoStep_finetuned_quicknorm_predict(l_spacy_NCBI_dev, d_spacy_MEDIC,
+    l_spacyNormalizedNCBI_by_quicknorm_dev = twoStep_finetuned_quicknorm_predict(l_spacy_NCBI_dev, dd_medic,
                                                                                  preprocessor, bert_encoder, weights,
                                                                                  TFmodel, verbose=0,
                                                                                  mode="pooled_output")
     print("Prediction done.")
-    """
+
 
     end = time.time()
     print(end - start, "sec de temps d'execution.")
@@ -770,6 +601,42 @@ if __name__ == '__main__':
 
 
 
+    """
+    
+    # Correct ontology:
+    l_wrong_cuis = list()
+    with open("./datasets/NCBI-DC/wrongCUIList.txt") as my_file:
+        for line in my_file:
+            l_wrong_cuis.append(line[:-1])
 
+    for doc in l_spacy_NCBI_test:
+        for mention in doc.spans["mentions"]:
+            for cui in mention._.kb_id_:
+                (mention._.pred_kb_id_).add(cui)
+    for doc in l_spacy_NCBI_test:
+        for mention in doc.spans["mentions"]:
+            for cui in mention._.kb_id_:
+                if cui in l_wrong_cuis:
+                    for correct_cui in dd_medic.keys():
+                        if "alt_cui" in dd_medic[correct_cui].keys():
+                            for altCui in dd_medic[correct_cui]["alt_cui"]:
+                                if altCui == cui:
+                                    (mention._.pred_kb_id_).remove(cui)
+                                    (mention._.pred_kb_id_).add(correct_cui)
+                                    break
+    for doc in l_spacy_NCBI_test:
+        for mention in doc.spans["mentions"]:
+            for cui in mention._.kb_id_:
+                mention._.kb_id_ = mention._.pred_kb_id_
+                mention._.pred_kb_id_ = set()
+
+    print_pubannotation(l_spacy_NCBI_test,
+                        "datasets/NCBI-DC/pubannotation-test-2/",
+                        "http://pubannotation.org/docs/sourcedb/PubMed/",
+                        "NCBI-Disease-train",
+                        "PubMed",
+                        "MEDIC")
+
+    """
 
 

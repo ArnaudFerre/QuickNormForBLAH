@@ -100,7 +100,10 @@ def loader_medic(filePath):
                         else: #OMIM
                             dd_medic[shortCui]["alt_cui"].append(altCui)
 
-                dd_medic[shortCui]["tags"] = l_line[7].rstrip().split('|')
+                if len(l_line[7]) > 1:  # no tag
+                    dd_medic[shortCui]["tags"] = l_line[7].rstrip().split('|')
+                else:
+                    dd_medic[shortCui]["tags"] = []
 
                 if len(l_line[4]) > 0:
                     l_parents = l_line[4].split('|')
