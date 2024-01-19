@@ -1,7 +1,11 @@
 # tmp batch files
 tmp/
 datasets/BB4/predictions/
+datasets/BB4/predictions-pheno/
+datasets/BB4/predictions-pheno-dev/
+datasets/BB4/predictions-dev/
 output/
+models/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
