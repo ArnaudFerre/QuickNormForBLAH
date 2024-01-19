@@ -87,6 +87,7 @@ def loader_medic(filePath):
                 dd_medic[shortCui]=dict()
 
                 dd_medic[shortCui]["label"] = l_line[0]
+                dd_medic[shortCui]["parents"] = list()
 
                 if len(l_line[2]) > 0:
                     dd_medic[shortCui]["alt_cui"] = list()
@@ -103,7 +104,6 @@ def loader_medic(filePath):
 
                 if len(l_line[4]) > 0:
                     l_parents = l_line[4].split('|')
-                    dd_medic[shortCui]["parents"] = list()
                     for parentCui in l_parents:
                         mMESH = requestMESH.match(parentCui)
                         if mMESH:
@@ -236,8 +236,8 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
             
             else:
                 if (mention["obj"] in l_type or l_type is None):
-                    start = mention["span"]["begin"]
-                    end = mention["span"]["end"]
+                    start = int(mention["span"]["begin"])
+                    end = int(mention["span"]["end"])
 
                     mentionSpan = spacy_doc.char_span(start, end, label=mention['obj'], alignment_mode="expand", span_id=mention['id'])
 
