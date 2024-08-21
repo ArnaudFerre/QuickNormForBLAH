@@ -38,14 +38,15 @@ import tracemalloc
 
 # importing libraries
 import os
-import psutil
+#import psutil
  
 # inner psutil function
 def process_memory():
     process = psutil.Process(os.getpid())
     mem_info = process.memory_info()
     return mem_info.rss
- 
+
+"""
 # decorator function
 def profile(func):
     def wrapper(*args, **kwargs):
@@ -59,8 +60,8 @@ def profile(func):
  
         return result
     return wrapper
-
-@profile
+"""
+#@profile
 def train_quicknorm(l_spacy_BB4_hab_train, d_spacyOBT, batchFilePath, batchSize, PREPROCESS_MODEL, TF_BERT_model, model_path, weights_path):
     
     preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(l_spacy_BB4_hab_train, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, batchFilePath, batchSize, verbose=1, mode="pooled_output")
@@ -73,7 +74,7 @@ def train_quicknorm(l_spacy_BB4_hab_train, d_spacyOBT, batchFilePath, batchSize,
     
     return preprocessor, weights, bert_encoder, TFmodel
 
-@profile
+#@profile
 def dev_test_quicknorm_after_training(l_spacy_BB4_hab_val, l_spacy_BB4_hab_test, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights, TFmodel, save_path):
 
 #    l_spacyNormalizedBB4_by_quicknorm_val = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights, TFmodel, verbose=0, mode="pooled_output")
@@ -83,7 +84,7 @@ def dev_test_quicknorm_after_training(l_spacy_BB4_hab_val, l_spacy_BB4_hab_test,
     spacy_into_a2(l_spacyNormalizedBB4_by_quicknorm_test, save_file=True, save_path=save_path, pred=True, align_type_onto={"Habitat": "OntoBiotope", "Microorganism": "NCBI_Taxonomy", "Phenotype": "OntoBiotope"})
     print("BB4 test predictions saved (a2 format) in", save_path)
     
-@profile
+#@profile
 def dev_quicknorm_after_training(l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights, TFmodel, save_path):
     
     l_spacyNormalizedBB4_by_quicknorm_val = twoStep_finetuned_quicknorm_predict(l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights, TFmodel, verbose=0, mode="pooled_output")
@@ -93,7 +94,7 @@ def dev_quicknorm_after_training(l_spacy_BB4_hab_val, d_spacyOBT, PREPROCESS_MOD
     spacy_into_a2(l_spacyNormalizedBB4_by_quicknorm_val, save_file=True, save_path=save_path, pred=True, align_type_onto={"Habitat": "OntoBiotope", "Microorganism": "NCBI_Taxonomy", "Phenotype": "OntoBiotope"})
     print("BB4 test predictions saved (a2 format) in", save_path)
 
-@profile
+#@profile
 def dev_test_quicknorm(l_spacy_BB4_hab_val, l_spacy_BB4_hab_test, d_spacyOBT, PREPROCESS_MODEL, TF_BERT_model, weights_path, TFmodel_path, save_path):
     
     TFmodel = tf.keras.models.load_model(TFmodel_path)
@@ -109,7 +110,7 @@ def dev_test_quicknorm(l_spacy_BB4_hab_val, l_spacy_BB4_hab_test, d_spacyOBT, PR
     print("BB4 test predictions saved (a2 format) in", save_path)
 
 # instantiation of decorator function
-@profile
+#@profile
 def load_BB4_dataset(bb4_norm_train_folder, bb4_norm_dev_folder, bb4_norm_test_folder, entity_types, onto_subpart_id):
     
     nlp = spacy.load("en_core_web_sm")
@@ -423,8 +424,8 @@ if __name__ == '__main__':
     #BB4_phenotype_experiment()
     #BB4_phenotype_dev_experiment()
     
-    BB4_habitat_time_experiment()
-    #BB4_phenotype_time_experiment()
+    #BB4_habitat_time_experiment()
+    BB4_phenotype_time_experiment()
         
     
     

@@ -10,17 +10,16 @@
 import sys
 import os
 
-from datasets import load_dataset_builder, load_dataset, get_dataset_config_names
 
 import spacy
 from spacy.tokens import Doc
 
-from pronto import Ontology
+from pronto import Ontology  # 2.5.0 ok?
 
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 
 import tensorflow_hub as hub
-import tensorflow_text as text
+import tensorflow_text as text  # same version as tensorflow
 from tensorflow import math, shape, zeros, string, data, constant, not_equal, cast, reduce_sum, expand_dims, float32, where, squeeze, tensor_scatter_nd_update, scatter_nd, concat, int32, tile
 from tensorflow.keras import layers, models, Model, Input, regularizers, optimizers, metrics, losses, initializers, backend, callbacks, activations
 import numpy
@@ -215,7 +214,9 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
     
     for doc in puba_corpus:
         
-        spacy_doc = spacyNlp(doc['text'])
+        # Due to a format problem in JSON file...
+        spacy_doc = spacyNlp(doc['text'].replace("\n\n", " "))  # Problem in creating the JSON...
+
         spacy_doc.user_data["document_id"] = doc["sourceid"]
         
         l_mentions = list()
@@ -243,6 +244,9 @@ def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
                     end = int(mention["span"]["end"])
 
                     mentionSpan = spacy_doc.char_span(start, end, label=mention['obj'], alignment_mode="expand", span_id=mention['id'])
+
+                    if mentionSpan is None:
+                        print(spacy_doc.user_data["document_id"], mention['id'], start, end, spacy_doc.text[start:end], len(spacy_doc.text))
 
                     # Complete span info:
                     mentionSpan.id_ = mention["id"]

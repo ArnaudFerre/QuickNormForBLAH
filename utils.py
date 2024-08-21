@@ -163,9 +163,9 @@ def get_list_of_tag_vectors(d_spacyOnto, TFhubPreprocessModel, TFhubModel, spanK
         else:
             label = d_spacyOnto[cui].text
         if mode == "sequence_output":
-            dd_conceptVectors[cui][label] = get_vector_from_spacy_mention(k, inputs, outputs, dim, unitNorm=True)
+            dd_conceptVectors[cui][label] = get_vector_from_spacy_mention(k, inputs, outputs, dim)
         elif mode == "pooled_output":
-            dd_conceptVectors[cui][label] = get_vector_from_spacy_mention_pooled(k, outputs, unitNorm=True)
+            dd_conceptVectors[cui][label] = get_vector_from_spacy_mention_pooled(k, outputs)
         k += 1  # Add +1 for the current label
 
         for synonym in d_spacyOnto[cui].user_data[spanKey]:
@@ -174,9 +174,9 @@ def get_list_of_tag_vectors(d_spacyOnto, TFhubPreprocessModel, TFhubModel, spanK
             else:
                 synonymText = synonym.text
             if mode == "sequence_output":
-                dd_conceptVectors[cui][synonymText] = get_vector_from_spacy_mention(k, inputs, outputs, dim, unitNorm=True)
+                dd_conceptVectors[cui][synonymText] = get_vector_from_spacy_mention(k, inputs, outputs, dim)
             elif mode == "pooled_output":
-                dd_conceptVectors[cui][synonymText] = get_vector_from_spacy_mention_pooled(k, outputs, unitNorm=True)
+                dd_conceptVectors[cui][synonymText] = get_vector_from_spacy_mention_pooled(k, outputs)
             k += 1  # Add +1 for the current synonym
 
     return dd_conceptVectors, k
@@ -199,7 +199,7 @@ def get_vector_from_spacy_mention(mentionIndex, associatedInputs, associatedOutp
     return mentionVector
 
 
-def get_vector_from_spacy_mention_old(mentionIndex, associatedInputs, associatedOutputs, dim, unitNorm=True):
+def get_vector_from_spacy_mention_old(mentionIndex, associatedInputs, associatedOutputs, dim):
     """
     Description: deprecated. Vectors of mentions are now calculated internally by the language model.
     """
@@ -220,14 +220,9 @@ def get_vector_from_spacy_mention_old(mentionIndex, associatedInputs, associated
         else:
             break
 
-    if unitNorm == True:
-        # unit-normalization vector:
-        inverse_norm = 1 / numpy.linalg.norm(mentionVector)
-        mentionVector = math.scalar_mul(inverse_norm, mentionVector)
-    else:
-        # Average vector:
-        inverse_nbTokens = 1 / (last_index-2)  # There is last_index-2 tokens in the mention
-        mentionVector = math.scalar_mul(inverse_nbTokens, mentionVector)
+    # unit-normalization vector:
+    inverse_norm = 1 / numpy.linalg.norm(mentionVector)
+    mentionVector = math.scalar_mul(inverse_norm, mentionVector)
 
     return mentionVector
 
@@ -301,13 +296,15 @@ def get_vectors_as_dict(onto, TFhubPreprocessModel, TFhubModel, mode="sequence_o
     
     vectors = dict()
     k = 0
+    print("\nTEST")
     for cui in onto:
         vectors[cui] = dict()
         for tag in onto[cui]:
             if mode == "sequence_output":
-                vectors[cui][tag] = get_vector_from_spacy_mention(k, inputs, outputs, dim, unitNorm=True)
+                vectors[cui][tag] = get_vector_from_spacy_mention(k, inputs, outputs, dim)
             elif mode == "pooled_output":
-                vectors[cui][tag] = get_vector_from_spacy_mention_pooled(k, outputs, unitNorm=True)
-            k+=1
+                vectors[cui][tag] = get_vector_from_spacy_mention_pooled(k, outputs)
+
+            k += 1
             
     return vectors, k
