@@ -12,18 +12,6 @@ import os
 
 from pronto import Ontology  # 2.5.0 ok?
 
-from nltk.stem import WordNetLemmatizer, PorterStemmer
-
-import tensorflow_hub as hub
-import tensorflow_text as text  # same version as tensorflow
-from tensorflow import math, shape, zeros, string, data, constant, not_equal, cast, reduce_sum, expand_dims, float32, where, squeeze, tensor_scatter_nd_update, scatter_nd, concat, int32, tile
-from tensorflow.keras import layers, models, Model, Input, regularizers, optimizers, metrics, losses, initializers, backend, callbacks, activations
-import numpy
-from scipy.spatial.distance import cosine, euclidean, cdist
-import copy
-
-import matplotlib.pyplot as plt
-
 import glob
 import json
 import re
