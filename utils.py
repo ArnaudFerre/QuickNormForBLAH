@@ -11,8 +11,6 @@ import copy
 from tensorflow import math, zeros, convert_to_tensor, int32, gather
 import numpy
 
-from converters import spacy_tags_from_onto_to_textual_tags_list
-
 ######################################################################################################################
 # Method
 ######################################################################################################################
