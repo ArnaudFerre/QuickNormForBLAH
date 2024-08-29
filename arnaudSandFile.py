@@ -7,9 +7,20 @@
 ######################################################################################################################
 print("Importing dependencies...")
 
-from tensorflow import string
+print("Importing TF...")
+from tensorflow import string, config
 from tensorflow.keras import layers, models, Model, Input, regularizers, optimizers, metrics, losses, initializers, \
     backend, callbacks, activations
+print("TF imported")
+
+print("\n\nGPU TF info...")
+from tensorflow.python.client import device_lib
+def get_available_devices():
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos]
+print("get_available_devices():", get_available_devices())
+print("device_lib.list_local_devices():", device_lib.list_local_devices())
+print("Num GPUs Available: ", len(config.list_physical_devices('GPU')))
 
 import os
 import glob
