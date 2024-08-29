@@ -10,10 +10,6 @@
 import sys
 import os
 
-
-import spacy
-from spacy.tokens import Doc
-
 from pronto import Ontology  # 2.5.0 ok?
 
 from nltk.stem import WordNetLemmatizer, PorterStemmer
@@ -35,31 +31,6 @@ import re
 ###################################################
 # Ontological loaders:
 ###################################################
-def loader_ontobiotope(filePath):
-    """
-    Description: A loader of OBO ontology based on Pronto lib.
-    (maybe useless...)
-    :param filePath: Path to the OBO file.
-    :return: an annotation ontology in a dict (format: concept ID (string): {'label': preferred tag,
-    'tags': list of other tags, 'parents': list of parents concepts}
-    """
-    dd_obt = dict()
-    onto = Ontology(filePath)
-    for o_concept in onto:
-        dd_obt[o_concept.id] = dict()
-        dd_obt[o_concept.id]["label"] = o_concept.name
-        dd_obt[o_concept.id]["tags"] = list()
-
-        for o_tag in o_concept.synonyms:
-            dd_obt[o_concept.id]["tags"].append(o_tag.desc)
-
-        dd_obt[o_concept.id]["parents"] = list()
-        for o_parent in o_concept.parents:
-            dd_obt[o_concept.id]["parents"].append(o_parent.id)
-
-    return dd_obt
-
-
 
 def loader_medic(filePath):
 
@@ -203,91 +174,75 @@ def load_pubannotation_corpus(folder):
     return corpus
 
 
-def pubannotation_to_spacy_corpus(folder, l_type=None, spacyNlp=None):
-    
-    puba_corpus = load_pubannotation_corpus(folder)
-    spacy_corpus = list()
-    
-    spacy.tokens.Span.set_extension("kb_id_", default={}, force=True)
-    spacy.tokens.Span.set_extension("kb_name_", default="", force=True)
-    spacy.tokens.Span.set_extension("pred_kb_id_", default={}, force=True)
-    
-    for doc in puba_corpus:
-        
-        # Due to a format problem in JSON file...
-        spacy_doc = spacyNlp(doc['text'].replace("\n\n", " "))  # Problem in creating the JSON...
+def pubannotation_to_python_corpus(folder, l_type=None):
+    ddd_corpus = dict()
 
-        spacy_doc.user_data["document_id"] = doc["sourceid"]
-        
-        l_mentions = list()
-        disc_mentions = dict()
+    puba_corpus = load_pubannotation_corpus(folder)
+    for doc in puba_corpus:
+        ddd_corpus[doc["sourceid"]] = dict()
+
+        disc_mentions = dict()  # initialize then erase the discontinuous mentions for a new doc.
         for i, mention in enumerate(doc["denotations"]):
-            
+
             match = re.search("^(.+?)-(\d)$", mention["id"])
-            if (match is not None):
+            if (match is not None):  # if it's a discontinuous mention (so at least 2 parts)
                 mention_id = match.group(1)
                 index = match.group(2)
                 mention_type = mention["obj"]
-                if (not mention_id in disc_mentions):
+                if (mention_id not in disc_mentions):
                     disc_mentions[mention_id] = dict()
                     disc_mentions[mention_id]['end'] = mention["span"]["end"]
-                elif (disc_mentions[mention_id]['end'] < mention["span"]["end"]):
+                elif (disc_mentions[mention_id]['end'] < mention["span"]["end"]):  # Find the end of the discontinuous mention.
                     disc_mentions[mention_id]['end'] = mention["span"]["end"]
-                if (mention_type != "_FRAGMENT"):
+                if (mention_type != "_FRAGMENT"):  # If it's not a fragment, we keep the true type.
                     disc_mentions[mention_id]['type'] = mention_type
-                if (index == "0"):
+                if (index == "0"):  # If it's the first part of the discontinuous mention (TX-0), we keep the start.
                     disc_mentions[mention_id]['start'] = mention["span"]["begin"]
-            
-            else:
+
+            else:  # else, it's a usual mention with a unique ID.
                 if (mention["obj"] in l_type or l_type is None):
+                    ddd_corpus[doc["sourceid"]][mention["id"]] = dict()
+
                     start = int(mention["span"]["begin"])
                     end = int(mention["span"]["end"])
+                    ddd_corpus[doc["sourceid"]][mention["id"]]["surface"] = doc["text"][start:end]
+                    ddd_corpus[doc["sourceid"]][mention["id"]]["cui"] = set()
+                    ddd_corpus[doc["sourceid"]][mention["id"]]["pred_cui"] = set()  # initialization of this attribute for future prediction
+                    ddd_corpus[doc["sourceid"]][mention["id"]]["type"] = mention["obj"]
 
-                    mentionSpan = spacy_doc.char_span(start, end, label=mention['obj'], alignment_mode="expand", span_id=mention['id'])
+                    if ddd_corpus[doc["sourceid"]][mention["id"]]["surface"] is None:
+                        print("void mention:", ddd_corpus[doc["sourceid"]][mention["id"]]["surface"])
 
-                    if mentionSpan is None:
-                        print(spacy_doc.user_data["document_id"], mention['id'], start, end, spacy_doc.text[start:end], len(spacy_doc.text))
-
-                    # Complete span info:
-                    mentionSpan.id_ = mention["id"]
-                    mentionSpan.label_ = mention["obj"]
-                    mentionSpan._.kb_id_ = set()
-                    mentionSpan._.pred_kb_id_ = set()  # initialization of this attribute for future prediction
-                    l_mentions.append(mentionSpan)
-        
         for disc in disc_mentions:
             if (disc_mentions[disc]["type"] in l_type or l_type is None):
+
                 start = disc_mentions[disc]["start"]
                 end = disc_mentions[disc]["end"]
 
-                mentionSpan = spacy_doc.char_span(start, end, label=disc_mentions[disc]['type'], alignment_mode="expand", span_id=disc)
-
+                ddd_corpus[doc["sourceid"]][disc] = dict()
                 # Complete span info:
-                mentionSpan.id_ = disc
-                mentionSpan.label_ = disc_mentions[disc]['type']
-                mentionSpan._.kb_id_ = set()
-                mentionSpan._.pred_kb_id_ = set()  # initialization of this attribute for future prediction
-                l_mentions.append(mentionSpan)
-                          
-        spacy_doc.spans["mentions"] = l_mentions
-        
-        # attributes (normalization)
-        if ("attributes" in doc):
+                ddd_corpus[doc["sourceid"]][disc]["surface"] = doc["text"][start:end]
+                ddd_corpus[doc["sourceid"]][disc]["cui"] = set()
+                ddd_corpus[doc["sourceid"]][disc]["pred_cui"] = set()  # initialization of this attribute for future prediction
+                ddd_corpus[doc["sourceid"]][disc]["type"] = disc_mentions[disc]['type']
+
+
+        if "attributes" in doc.keys():  # attributes (=normalization info)
             for att in doc["attributes"]:
                 mention_id = att['subj']
+
                 match = re.search("^(.+?)-(\d)$", mention_id)
-                if (match is not None):
+                if (match is not None):  # Because a discontinuous mention is identified in PubAnnotation format by: "subj": "TX-0"
                     mention_id = match.group(1)
-         
-                for mention in spacy_doc.spans["mentions"]:
-                    if (mention.id_ == mention_id):
-                        mention._.kb_id_.add(att['obj'])
-                        mention._.kb_name_ = att['pred']
-                
-        spacy_corpus.append(spacy_doc)
-        
-    return spacy_corpus
-    
+                    if not(disc_mentions[mention_id]["type"] in l_type or l_type is None):  # Because other types can still be in disc_mentions
+                        continue
+
+                for mention_id_from_corpus in ddd_corpus[doc["sourceid"]].keys():
+                    if (mention_id_from_corpus == mention_id):
+                        ddd_corpus[doc["sourceid"]][mention_id]["cui"].add(att['obj'])
+                        # att['pred'] contains the name of the onto
+
+    return ddd_corpus
 
 
 ######################################################################################################################
