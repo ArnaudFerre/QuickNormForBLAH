@@ -7,8 +7,8 @@ dependencies:
   - tensorflow-gpu==2.4.1
   - matplotlib 
   - pip
-  - pip: 
-    - tensorflow-hub
+  - pip:
     - pronto==2.5.6
     - tensorflow-text==2.4.1
     - nltk
+    - tensorflow-hub
