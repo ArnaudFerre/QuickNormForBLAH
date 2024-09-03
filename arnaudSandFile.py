@@ -7,7 +7,7 @@
 ######################################################################################################################
 print("Importing dependencies...")
 import tensorflow as tf
-import tensorflow_text as text
+#import tensorflow_text as text
 import tensorflow_hub as hub
 
 model = tf.keras.Sequential([
