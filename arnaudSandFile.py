@@ -23,11 +23,11 @@ print("device_lib.list_local_devices():", device_lib.list_local_devices())
 print("Num GPUs Available: ", len(config.list_physical_devices('GPU')))
 
 import tensorflow_hub as hub
-"""
+
 print("Importing tensorflow_text...")
 import tensorflow_text as text  # mandatory to avoid error (https://stackoverflow.com/questions/75576980/tensorflow-2-x-error-op-type-not-registered-casefoldutf8-in-binary-running-o)
 print("tensorflow_text imported.")
-"""
+
 import os
 import glob
 from os import listdir
