@@ -7,11 +7,19 @@
 ######################################################################################################################
 print("Importing dependencies...")
 
+
+
+print("Importing tensorflow_text...")
+import tensorflow_text as text  # mandatory to avoid error (https://stackoverflow.com/questions/75576980/tensorflow-2-x-error-op-type-not-registered-casefoldutf8-in-binary-running-o)
+print("tensorflow_text imported.")
+
 print("Importing TF...")
 from tensorflow import string, config
 from tensorflow.keras import layers, models, Model, Input, regularizers, optimizers, metrics, losses, initializers, \
     backend, callbacks, activations
 print("TF imported")
+
+import tensorflow_hub as hub
 
 print("\n\nGPU TF info...")
 from tensorflow.python.client import device_lib
@@ -22,11 +30,6 @@ print("get_available_devices():", get_available_devices())
 print("device_lib.list_local_devices():", device_lib.list_local_devices())
 print("Num GPUs Available: ", len(config.list_physical_devices('GPU')))
 
-import tensorflow_hub as hub
-
-print("Importing tensorflow_text...")
-import tensorflow_text as text  # mandatory to avoid error (https://stackoverflow.com/questions/75576980/tensorflow-2-x-error-op-type-not-registered-casefoldutf8-in-binary-running-o)
-print("tensorflow_text imported.")
 
 import os
 import glob
