@@ -6,6 +6,7 @@
 # Import
 ######################################################################################################################
 print("Importing dependencies...")
+"""
 import tensorflow as tf
 #import tensorflow_text as text
 import tensorflow_hub as hub
@@ -16,13 +17,13 @@ model = tf.keras.Sequential([
 
 model.summary()
 sys.exit(0)
+"""
 
-
-
+"""
 print("Importing tensorflow_text...")
 import tensorflow_text as text  # mandatory to avoid error (https://stackoverflow.com/questions/75576980/tensorflow-2-x-error-op-type-not-registered-casefoldutf8-in-binary-running-o)
 print("tensorflow_text imported.")
-
+"""
 print("Importing TF...")
 from tensorflow import string, config
 from tensorflow.keras import layers, models, Model, Input, regularizers, optimizers, metrics, losses, initializers, \
