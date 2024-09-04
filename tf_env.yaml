@@ -1,4 +1,4 @@
-name: tf_env  # Nom de l'environnement
+name: tf_env2  # Nom de l'environnement
 channels:
   - defaults
 dependencies:

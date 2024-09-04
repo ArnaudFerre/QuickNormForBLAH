@@ -61,6 +61,8 @@ import glob
 from os import listdir
 import random
 import sys
+import pathlib
+import time
 
 import numpy
 from scipy.spatial.distance import cdist
@@ -224,6 +226,10 @@ def write_batch(l_mentions, concept_vectors, numberInBatch, batchNb, batchSize, 
 
 def prepare_training_data_in_batches(ddd_train_corpus, dd_onto, batchFilePath, batchSize, preprocessor, bert_encoder,
                                      addLabels=True, addMentions=True, mode="pooled_output"):
+
+    # create folder if does not exist
+    pathlib.Path(batchFilePath).mkdir(parents=True, exist_ok=True)
+
     # empty batch folder
     files = glob.glob(batchFilePath + '/batch*')
     for f in files:
@@ -424,7 +430,6 @@ def twoStep_finetuned_quicknorm_predict(ddd_valDoc, dd_onto, preprocessor, bert_
 ######################################################################################################################
 if __name__ == '__main__':
 
-    import time
     start = time.time()
     t = time.localtime()
     current_time = time.strftime("%H:%M:%S", t)
