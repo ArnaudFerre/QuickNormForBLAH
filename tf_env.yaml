@@ -2,6 +2,7 @@ name: tf_env2  # Nom de l'environnement
 channels:
   - defaults
 dependencies:
+  - python 3.8
   - tensorflow-gpu==2.4.1 # ? ok avec cuda 11.0 ? mais tf-text plante / 2.2.0 need cuda 10.2
   - pip
   - pip:
