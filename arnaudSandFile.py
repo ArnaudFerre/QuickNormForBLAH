@@ -7,8 +7,9 @@
 ######################################################################################################################
 print("Importing dependencies...")
 
+import sys
 import tensorflow as tf
-import tensorflow_text as text
+#import tensorflow_text as text
 import tensorflow_hub as hub
 
 model = tf.keras.Sequential([
@@ -437,8 +438,10 @@ if __name__ == '__main__':
 
     print("\nTraining...")
     batchFilePath = "./tmp/"
-    PREPROCESS_MODEL = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'
-    TF_BERT_model = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'
+
+    #Todo: Change the URLs of the model because there are on Kaggle now:
+    PREPROCESS_MODEL = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'  # "https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3"
+    TF_BERT_model = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'  # "https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2"
     batchSize = 64  # 256  # 64
 
     preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(ddd_BB4_hab_train,
