@@ -7,19 +7,31 @@
 ######################################################################################################################
 print("Importing dependencies...")
 
+"""
 import sys
 import tensorflow as tf
-#import tensorflow_text as text
+import tensorflow_text as text
 import tensorflow_hub as hub
 
-model = tf.keras.Sequential([
-    hub.KerasLayer("https://tfhub.dev/google/nnlm-en-dim50/2", input_shape=[], dtype=tf.string),
-])
+# Définir l'entrée sous forme de chaînes de texte
+text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
+
+preprocessor = hub.KerasLayer("https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3", name="preprocessor")
+preprocessed_text = preprocessor(text_input)
+
+bert_encoder = hub.KerasLayer("https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2", trainable=True, name="BERT_encoder")
+bert_output = bert_encoder(preprocessed_text)
+
+output = tf.keras.layers.Dense(1, activation='relu')(bert_output['pooled_output'])
+
+model = tf.keras.Model(inputs=[text_input], outputs=[output])
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 model.summary()
 
 sys.exit(0)
-
+"""
 ###################
 
 print("Importing TF...")
@@ -344,8 +356,8 @@ def twoStep_finetuned_quicknorm_train(ddd_trainDoc, dd_onto, PREPROCESS_MODEL, T
     ######
     # Loading TF Hub model
     ######
-    preprocessor = hub.KerasLayer(PREPROCESS_MODEL)
-    bert_encoder = hub.KerasLayer(TF_BERT_MODEL, trainable=True)
+    preprocessor = hub.KerasLayer(PREPROCESS_MODEL, name="preprocessor")
+    bert_encoder = hub.KerasLayer(TF_BERT_MODEL, trainable=True, name="bert_encoder")
 
     ######
     # Target finetuning:
@@ -440,8 +452,8 @@ if __name__ == '__main__':
     batchFilePath = "./tmp/"
 
     #Todo: Change the URLs of the model because there are on Kaggle now:
-    PREPROCESS_MODEL = 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'  # "https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3"
-    TF_BERT_model = 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'  # "https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2"
+    PREPROCESS_MODEL = "https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3"  # 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'  #
+    TF_BERT_model = "https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2"  # 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'  #
     batchSize = 64  # 256  # 64
 
     preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(ddd_BB4_hab_train,
