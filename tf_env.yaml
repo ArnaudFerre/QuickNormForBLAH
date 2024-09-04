@@ -1,10 +1,9 @@
-name: tf_env  # Nom de l'environnement
+name: tf_env2  # Nom de l'environnement
 channels:
   - defaults
 dependencies:
+  - tensorflow-gpu==2.4.1 # ? ok avec cuda 11.0 ? mais tf-text plante / 2.2.0 need cuda 10.2
   - pip
   - pip:
-    - pronto==2.5.6
     - tensorflow-text==2.4.1
-    - nltk
     - tensorflow-hub
