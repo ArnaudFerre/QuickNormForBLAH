@@ -7,33 +7,6 @@
 ######################################################################################################################
 print("Importing dependencies...")
 
-"""
-import sys
-import tensorflow as tf
-import tensorflow_text as text
-import tensorflow_hub as hub
-
-# Définir l'entrée sous forme de chaînes de texte
-text_input = tf.keras.layers.Input(shape=(), dtype=tf.string, name='text')
-
-preprocessor = hub.KerasLayer("https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3", name="preprocessor")
-preprocessed_text = preprocessor(text_input)
-
-bert_encoder = hub.KerasLayer("https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2", trainable=True, name="BERT_encoder")
-bert_output = bert_encoder(preprocessed_text)
-
-output = tf.keras.layers.Dense(1, activation='relu')(bert_output['pooled_output'])
-
-model = tf.keras.Model(inputs=[text_input], outputs=[output])
-
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
-model.summary()
-
-sys.exit(0)
-"""
-###################
-
 print("Importing TF...")
 from tensorflow import string, config
 from tensorflow.keras import layers, models, Model, Input, regularizers, optimizers, metrics, losses, initializers, \
@@ -63,6 +36,7 @@ import random
 import sys
 import pathlib
 import time
+import argparse
 
 import numpy
 from scipy.spatial.distance import cdist
@@ -430,58 +404,130 @@ def twoStep_finetuned_quicknorm_predict(ddd_valDoc, dd_onto, preprocessor, bert_
 ######################################################################################################################
 if __name__ == '__main__':
 
-    start = time.time()
-    t = time.localtime()
-    current_time = time.strftime("%H:%M:%S", t)
-    print(current_time)
+    def main(option):
 
-    print("\nQuickNorm on BB4:")
+        start = time.time()
+        t = time.localtime()
+        current_time = time.strftime("%H:%M:%S", t)
+        print(current_time)
 
-    bb4_norm_test_folder = "datasets/BB4/bionlp-ost-19-BB-norm-test/"
-    bb4_norm_traindev_folder = "datasets/BB4/bionlp-ost-19-BB-norm-traindev/"
-    bb4_norm_train_folder = "datasets/BB4/bionlp-ost-19-BB-norm-train/"
-    bb4_norm_dev_folder = "datasets/BB4/bionlp-ost-19-BB-norm-dev/"
+        if option == 'bb4':
 
-    print("Create an ontology in SpaCy (a list of concepts, each one as a SpaCy doc):")
-    dd_obt = loader_ontobiotope("./datasets/BB4/OntoBiotope_BioNLP-OST-2019.obo")
-    dd_obt_hab = select_subpart_hierarchy(dd_obt, "OBT:000001")
+            print("\nQuickNorm on BB4:")
 
-    ddd_BB4_hab_train = pubannotation_to_python_corpus(bb4_norm_train_folder, l_type=["Habitat"])
-    ddd_BB4_hab_dev = pubannotation_to_python_corpus(bb4_norm_dev_folder, l_type=["Habitat"])
-    print("\nNb of doc in train:", len(ddd_BB4_hab_train))
-    print("\nNb of doc in dev:", len(ddd_BB4_hab_dev))
-    print("\nNb of mentions in train:", sum(len(sub_dict.keys()) for sub_dict in ddd_BB4_hab_train.values()))
-    print("\nNb of mentions in dev:", sum(len(sub_dict.keys()) for sub_dict in ddd_BB4_hab_dev.values()))
+            bb4_norm_test_folder = "datasets/BB4/bionlp-ost-19-BB-norm-test/"
+            bb4_norm_traindev_folder = "datasets/BB4/bionlp-ost-19-BB-norm-traindev/"
+            bb4_norm_train_folder = "datasets/BB4/bionlp-ost-19-BB-norm-train/"
+            bb4_norm_dev_folder = "datasets/BB4/bionlp-ost-19-BB-norm-dev/"
 
-    print("\nTraining...")
-    batchFilePath = "./tmp/"
+            print("Loading OntoBiotope...")
+            dd_obt = loader_ontobiotope("./datasets/BB4/OntoBiotope_BioNLP-OST-2019.obo")
+            dd_obt_hab = select_subpart_hierarchy(dd_obt, "OBT:000001")
+            print("OntoBiotope loaded with", len(dd_obt_hab.keys()), "habitat concepts.")
 
-    #Todo: Change the URLs of the model because there are on Kaggle now:
-    PREPROCESS_MODEL = "https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3"  # 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'  #
-    TF_BERT_model = "https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2"  # 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'  #
-    batchSize = 64  # 256  # 64
+            print("Loading BB4 Habitats corpus...")
+            ddd_BB4_hab_train = pubannotation_to_python_corpus(bb4_norm_train_folder, l_type=["Habitat"])
+            ddd_BB4_hab_dev = pubannotation_to_python_corpus(bb4_norm_dev_folder, l_type=["Habitat"])
+            print("\n\tNb of doc in train:", len(ddd_BB4_hab_train))
+            print("\n\tNb of doc in dev:", len(ddd_BB4_hab_dev))
+            print("\n\tNb of mentions in train:", sum(len(sub_dict.keys()) for sub_dict in ddd_BB4_hab_train.values()))
+            print("\n\tNb of mentions in dev:", sum(len(sub_dict.keys()) for sub_dict in ddd_BB4_hab_dev.values()))
+            print("Done.")
 
-    preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(ddd_BB4_hab_train,
-                                                                                     dd_obt_hab, PREPROCESS_MODEL,
-                                                                                     TF_BERT_model, batchFilePath,
-                                                                                     batchSize, verbose=1,
-                                                                                     mode="pooled_output")
-    print("training done.")
+            print("\nTraining...")
+            batchFilePath = "./tmp/"
+            PREPROCESS_MODEL = "https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3"  # 'https://tfhub.dev/tensorflow/bert_en_uncased_preprocess/3'  #
+            TF_BERT_model = "https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2"  # 'https://tfhub.dev/tensorflow/small_bert/bert_en_uncased_L-2_H-128_A-2/2'  #
+            batchSize = 64  # 256  # 64
+            preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(ddd_BB4_hab_train,
+                                                                                             dd_obt_hab, PREPROCESS_MODEL,
+                                                                                             TF_BERT_model, batchFilePath,
+                                                                                             batchSize, verbose=1,
+                                                                                             mode="pooled_output")
+            print("training done.")
 
-    print("\nPrediction...")
+            print("\nPrediction...")
+            ddd_normalized_BB4_hab_dev = twoStep_finetuned_quicknorm_predict(ddd_BB4_hab_dev, dd_obt_hab,
+                                                                                         preprocessor, bert_encoder, weights,
+                                                                                         TFmodel, verbose=0,
+                                                                                         mode="pooled_output")
+            print("Prediction done.")
 
-    ddd_normalized_BB4_hab_dev = twoStep_finetuned_quicknorm_predict(ddd_BB4_hab_dev, dd_obt_hab,
-                                                                                 preprocessor, bert_encoder, weights,
-                                                                                 TFmodel, verbose=0,
-                                                                                 mode="pooled_output")
-    print("Prediction done.")
+        elif option == 'ncbi':
 
-    end = time.time()
-    print(end - start, "sec de temps d'execution.")
+            print("\nQuickNorm on NCBI-DC:")
 
-    for doc in ddd_normalized_BB4_hab_dev.keys():
-        print(doc)
-        for mention in ddd_normalized_BB4_hab_dev[doc].keys():
-            print("\t", ddd_normalized_BB4_hab_dev[doc][mention]["surface"], ddd_normalized_BB4_hab_dev[doc][mention]["cui"], ddd_normalized_BB4_hab_dev[doc][mention]["pred_cui"])
+            ncbi_norm_test_folder = "datasets/NCBI-DC/pubannotation-test-clean/"
+            ncbi_norm_dev_folder = "datasets/NCBI-DC/pubannotation-dev-clean/"
+            ncbi_norm_train_folder = "datasets/NCBI-DC/pubannotation-train-clean/"
 
-    print("Accuracy:", accuracy(ddd_normalized_BB4_hab_dev))
+            print("Loading Medic ontology...")
+            from loaders import loader_medic
+            dd_medic = loader_medic("datasets/NCBI-DC/CTD_diseases_dnorm.tsv")
+            print("MEDIC loaded with", len(dd_medic.keys()), "concepts.")
+
+            print("Loading NCBI-Disease...")
+            ddd_NCBI_train = pubannotation_to_python_corpus(ncbi_norm_train_folder)
+            ddd_NCBI_dev = pubannotation_to_python_corpus(ncbi_norm_dev_folder)
+            print("\n\tNb of doc in train:", len(ddd_NCBI_train))
+            print("\n\tNb of doc in dev:", len(ddd_NCBI_dev))
+            print("\n\tNb of mentions in train:", sum(len(sub_dict.keys()) for sub_dict in ddd_NCBI_train.values()))
+            print("\n\tNb of mentions in dev:", sum(len(sub_dict.keys()) for sub_dict in ddd_NCBI_dev.values()))
+
+            print("\nTraining...")
+            batchFilePath = "./tmp/"
+            PREPROCESS_MODEL = "https://kaggle.com/models/tensorflow/bert/TensorFlow2/en-uncased-preprocess/3"  #
+            TF_BERT_model = "https://www.kaggle.com/models/tensorflow/bert/TensorFlow2/bert-en-uncased-l-2-h-128-a-2/2"  #
+            batchSize = 64  # 256  # 64
+            preprocessor, weights, bert_encoder, TFmodel = twoStep_finetuned_quicknorm_train(ddd_NCBI_train,
+                                                                                             dd_medic, PREPROCESS_MODEL,
+                                                                                             TF_BERT_model, batchFilePath,
+                                                                                             batchSize, verbose=1,
+                                                                                             mode="pooled_output")
+            print("training done.")
+
+            print("\nPrediction...")
+            ddd_normalized_BB4_hab_dev = twoStep_finetuned_quicknorm_predict(ddd_NCBI_dev, dd_medic,
+                                                                                         preprocessor, bert_encoder, weights,
+                                                                                         TFmodel, verbose=0,
+                                                                                         mode="pooled_output")
+            print("Prediction done.")
+
+        else:
+            print(f"Option inconnue : {option}")
+
+        #############################
+
+        end = time.time()
+        print(end - start, "sec de temps d'execution.")
+
+        """
+        for doc in ddd_normalized_BB4_hab_dev.keys():
+            print(doc)
+            for mention in ddd_normalized_BB4_hab_dev[doc].keys():
+                print("\t", ddd_normalized_BB4_hab_dev[doc][mention]["surface"], ddd_normalized_BB4_hab_dev[doc][mention]["cui"], ddd_normalized_BB4_hab_dev[doc][mention]["pred_cui"])
+        """
+
+        print("Accuracy:", accuracy(ddd_normalized_BB4_hab_dev))
+
+
+    ##################################################################################################################
+
+
+    parser = argparse.ArgumentParser(description="Experimental script to test QuickNorm on BB4-Habitat and NCBI-Disease Corpus.")
+    parser.add_argument('--option', type=str, help='Choose between "bb4" and "ncbi".', required=True)
+    args = parser.parse_args()
+
+    main(args.option)
+
+
+
+
+
+
+
+
+
+
+
+

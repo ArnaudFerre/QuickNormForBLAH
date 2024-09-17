@@ -187,7 +187,8 @@ def pubannotation_to_python_corpus(folder, l_type=None):
                     disc_mentions[mention_id]['start'] = mention["span"]["begin"]
 
             else:  # else, it's a usual mention with a unique ID.
-                if (mention["obj"] in l_type or l_type is None):
+                if (l_type is not None and mention["obj"] in l_type) or (l_type is None):
+
                     ddd_corpus[doc["sourceid"]][mention["id"]] = dict()
 
                     start = int(mention["span"]["begin"])
@@ -201,7 +202,7 @@ def pubannotation_to_python_corpus(folder, l_type=None):
                         print("void mention:", ddd_corpus[doc["sourceid"]][mention["id"]]["surface"])
 
         for disc in disc_mentions:
-            if (disc_mentions[disc]["type"] in l_type or l_type is None):
+            if (l_type is not None and disc_mentions[disc]["type"] in l_type) or (l_type is None):
 
                 start = disc_mentions[disc]["start"]
                 end = disc_mentions[disc]["end"]
@@ -221,7 +222,7 @@ def pubannotation_to_python_corpus(folder, l_type=None):
                 match = re.search("^(.+?)-(\d)$", mention_id)
                 if (match is not None):  # Because a discontinuous mention is identified in PubAnnotation format by: "subj": "TX-0"
                     mention_id = match.group(1)
-                    if not(disc_mentions[mention_id]["type"] in l_type or l_type is None):  # Because other types can still be in disc_mentions
+                    if not((l_type is not None and disc_mentions[disc]["type"] in l_type) or (l_type is None)):  # Because other types can still be in disc_mentions
                         continue
 
                 for mention_id_from_corpus in ddd_corpus[doc["sourceid"]].keys():
