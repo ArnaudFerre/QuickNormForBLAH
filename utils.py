@@ -294,6 +294,7 @@ def get_vectors_as_dict(onto, TFhubPreprocessModel, TFhubModel, mode="sequence_o
     
     vectors = dict()
     k = 0
+
     print("\nTEST")
     for cui in onto:
         vectors[cui] = dict()
